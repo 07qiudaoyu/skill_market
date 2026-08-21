@@ -1,0 +1,20 @@
+modules —— 你真正的“业务部门”
+
+这是整个项目最核心的地方。
+
+你可以把：
+
+modules/
+
+理解成：
+
+Skill Market 的各个业务部门。
+
+比如：
+
+auth       → 用户部门
+skills     → Skill 商品部门
+versions   → Skill 版本/上传部门
+reviews    → 审核部门
+registry   → 下载/安装部门
+interactions → 评论点赞评分部门

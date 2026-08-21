@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pymysql
+bcrypt
+PyJWT
+email-validator
