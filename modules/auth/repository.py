@@ -70,6 +70,13 @@ class AuthRepository:
         )
         result=cursor.fetchone()
         return result
+    def get_all_data(self):
+        cursor=self.conn.cursor()
+        cursor.execute(
+            "select id,name,email,developer,join_date from join_and_enter"
+        )
+        result1=cursor.fetchall()
+        return result1
     
     
 

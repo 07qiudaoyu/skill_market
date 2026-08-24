@@ -105,6 +105,22 @@ class AuthService:
              ak=result
              UserData=self.repository.data_user(ak["email"])
              return UserData
+    #解码token.pro
+    def analyze_token_pro(self,token:str):
+        result=check_token(token)
+        if result is None:
+            raise HTTPException(
+                status_code=401,
+                detail="token错误!"
+            )
+        if result["developer"]!=1:
+            raise HTTPException(
+                status_code=403,
+                detail="权限不足"
+            )
+        else:
+            result=self.repository.get_all_data()
+            return result
              
 
 

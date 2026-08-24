@@ -45,6 +45,7 @@ class UserResponse(BaseModel):
     message:str
     user_id:int
     name:str
+#个人用户得数据规定
 class User_Data_Request(BaseModel):
     token:str
 class User_Data_Response(BaseModel):
@@ -53,4 +54,16 @@ class User_Data_Response(BaseModel):
     name:str
     developer:int
     join_date:datetime
+#全用户得数据
+class UserDataItem(BaseModel):
+    id:int
+    name:str
+    email:EmailStr
+    developer:int
+    join_date:datetime
+class Users_Datas_Request(BaseModel):
+    token:str
+class Users_Datas_Response(BaseModel):
+    message:str
+    users_data:list[UserDataItem]
 

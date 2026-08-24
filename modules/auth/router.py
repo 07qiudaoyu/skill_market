@@ -10,7 +10,9 @@ from .schemas import (
     UserRequest,
     UserResponse,
     User_Data_Request,
-    User_Data_Response
+    User_Data_Response,
+    Users_Datas_Request,
+    Users_Datas_Response
     )
 from .service import AuthService
 from .dependencies import get_auth_service
@@ -60,7 +62,8 @@ def login(
     }
 @router.post(
     "/user_data",
-    response_model=User_Data_Response
+    response_model=User_Data_Response,
+    status_code=status.HTTP_200_OK
 )
 def data_1_user(
     item:User_Data_Request,
@@ -77,3 +80,19 @@ def data_1_user(
         "join_date":TOKEN["join_date"]
         
     }
+@router.post(
+    "/users_datas",
+    response_model=Users_Datas_Response
+)
+def data_2_user(
+    item:Users_Datas_Request,
+     service:AuthService=Depends(get_auth_service)
+):
+    TOKEN=service.analyze_token_pro(
+        item.token
+    )
+    return {
+        "message":"全用户数据查询成功",
+        "users_data":TOKEN
+    }
+    
