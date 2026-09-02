@@ -1,0 +1,12 @@
+{
+  "name": "web-data-crawler",
+  "displayName": "网页数据采集器",
+  "description": "输入 URL 自动抓取网页内容并导出为结构化数据。",
+  "version": "1.0.0",
+  "license": "MIT",
+  "category": "Web开发",
+  "tags": ["crawler", "scraping", "web", "data"],
+  "agents": ["python"],
+  "dependencies": [],
+  "minCliVersion": "0.1.0"
+}

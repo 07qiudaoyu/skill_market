@@ -1,0 +1,12 @@
+{
+  "name": "daily-report-generator",
+  "displayName": "日报自动生成器",
+  "description": "自动读取数据源并生成 Excel/PDF 格式的日报。",
+  "version": "1.0.0",
+  "license": "MIT",
+  "category": "自动化工具",
+  "tags": ["report", "excel", "pdf", "automation"],
+  "agents": ["python"],
+  "dependencies": [],
+  "minCliVersion": "0.1.0"
+}

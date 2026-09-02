@@ -1,0 +1,12 @@
+{
+  "name": "auto-email-sender",
+  "displayName": "邮件自动发送工具",
+  "description": "根据模板自动发送邮件，支持 SMTP 配置和 HTML 模板渲染。",
+  "version": "1.0.0",
+  "license": "MIT",
+  "category": "Web开发",
+  "tags": ["email", "automation", "smtp"],
+  "agents": ["python"],
+  "dependencies": [],
+  "minCliVersion": "0.1.0"
+}

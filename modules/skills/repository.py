@@ -1,3 +1,4 @@
+
 class SkillsRepository:
     def __init__(self, conn):
         self.conn = conn
@@ -71,5 +72,46 @@ class SkillsRepository:
             else:
                 row["tags"] = []
             del row["tag_names"]
-
         return result
+    def Find_skill_versions(self,public_id:str):
+            cursor=self.conn.cursor()
+            try:
+                sql="""
+select
+            skills.display_name AS skill_name,
+            jne.name AS founder_name,
+            sv.id,
+            sv.skill_id,
+            sv.version,
+            sv.size_bytes,
+            sv.file_name,
+            sv.created_at
+ from skills
+left join join_and_enter jne on jne.id=skills.owner_id
+inner join skill_versions sv on sv.skill_id=skills.id
+where skills.public_id=%s
+and sv.status=1
+order by sv.created_at desc
+"""
+                cursor.execute(sql,(public_id,))
+                result=cursor.fetchall()
+                return result
+            finally:
+                   cursor.close()
+    def Re_Find_Zip(self,skill_versions_id:int):
+           cursor=self.conn.cursor()
+           try:
+                  sql="""
+select storage_key from skill_versions where id=%s
+"""                
+                  cursor.execute(sql,(skill_versions_id))
+                  result=cursor.fetchone()
+                  return result
+           finally:
+                  cursor.close()
+                  
+           
+           
+
+
+            

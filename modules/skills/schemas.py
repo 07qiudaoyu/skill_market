@@ -25,3 +25,22 @@ class SkillSearchResponse(BaseModel):
     items: list[SkillListItem]
     page: int
     size: int
+class All_Skill_Versions(BaseModel):
+    skill_name:str
+    version:str
+    size_bytes:int
+    file_name:str
+    created_at:datetime
+    founder_name:str
+class Find_ZIP_Request(BaseModel):
+    public_id:str
+class Find_ZIP_Response(BaseModel):
+    message:str
+    versions:list[All_Skill_Versions]
+class Sc_Find_Zip_Request(BaseModel):
+    skill_versions_id:int
+class Sc_Download_Zip_Request(BaseModel):
+    id:int
+
+  
+
