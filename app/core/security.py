@@ -5,6 +5,9 @@
 密码、JWT、Refresh Token 这些安全相关的东西。'''
 
 import bcrypt
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import jwt
 def hash_password(password: str) -> str:
     password_hash = bcrypt.hashpw(
@@ -20,7 +23,7 @@ def make_hash_password(password: str,hash_password:str)->bool:
         hash_password.encode("utf-8")
     )
 #token编写
-SECRET_KEY="abuiwhfbiujeuihd133"
+SECRET_KEY=os.getenv("JWT_SECRET_KEY")
 def token_jwt(payload:dict):
     token=jwt.encode(
         payload,

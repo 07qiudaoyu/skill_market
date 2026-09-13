@@ -1,4 +1,7 @@
 
+import uuid
+
+
 class SkillsRepository:
     def __init__(self, conn):
         self.conn = conn
@@ -109,9 +112,198 @@ select storage_key from skill_versions where id=%s
                   return result
            finally:
                   cursor.close()
-                  
-           
-           
+    
+    def Re_Upload_Zip(
+        self,
+        name: str,
+        version: str,
+        user_id: int,
+        category: str,
+        change_tags: list[str],
+        readme_html: str,
+        summary: str,
+        slug: str,
+        size_bytes: int
+):
+     cursor = self.conn.cursor()
 
+     try:
+        sql1 = """
+        SELECT *
+        FROM skills
+        WHERE slug = %s AND owner_id = %s
+        """
 
-            
+        cursor.execute(sql1, (slug, user_id))
+        result1 = cursor.fetchone()
+
+        if not result1:  # 新技能
+
+            sql2 = """
+            SELECT *
+            FROM categories
+            WHERE slug = %s
+            """
+
+            cursor.execute(sql2, (category,))
+            result2 = cursor.fetchone()
+
+            if not result2:
+                raise ValueError("分类不存在")
+
+            sql3 = """
+            INSERT INTO skills
+                (public_id, display_name, summary, readme_html, slug, owner_id, category_id)
+            VALUES
+                (%s, %s, %s, %s, %s, %s, %s)
+            """
+
+            cursor.execute(
+                sql3,
+                (
+                    str(uuid.uuid4()),
+                    name,
+                    summary,
+                    readme_html,
+                    slug,
+                    user_id,
+                    result2["id"]
+                )
+            )
+
+            # 获取刚刚插入的 skill_id
+            skill_id = cursor.lastrowid
+
+            # 处理标签
+            if change_tags:
+                placeholders = ",".join(
+                    ["%s"] * len(change_tags)
+                )
+
+                sql5 = f"""
+                SELECT id
+                FROM tags
+                WHERE slug IN ({placeholders})
+                """
+
+                cursor.execute(sql5, change_tags)
+                result5 = cursor.fetchall()
+
+                tag_ids = [
+                    row["id"]
+                    for row in result5
+                ]
+
+                for tag_id in tag_ids:
+                    sql_tag = """
+                    INSERT INTO skill_tags
+                        (skill_id, tag_id)
+                    VALUES
+                        (%s, %s)
+                    """
+
+                    cursor.execute(
+                        sql_tag,
+                        (skill_id, tag_id)
+                    )
+
+            # 插入版本
+            public_id = f"uuid-{skill_id}"
+            file_name = f"{slug}_v{version}.zip"
+            storage_key = f"skills/{public_id}/{version}/{file_name}"
+
+            sql6 = """
+            INSERT INTO skill_versions
+                (version, file_name, skill_id, storage_key, size_bytes)
+            VALUES
+                (%s, %s, %s, %s, %s)
+            """
+
+            cursor.execute(
+                sql6,
+                (
+                    version,
+                    file_name,
+                    skill_id,
+                    storage_key,
+                    size_bytes
+                )
+            )
+
+            version_id = cursor.lastrowid
+
+            sql8 = """
+            UPDATE skills
+            SET public_id = %s,
+                latest_version_id = %s
+            WHERE id = %s
+            """
+
+            cursor.execute(
+                sql8,
+                (
+                    public_id,
+                    version_id,
+                    skill_id
+                )
+            )
+
+        else:  # 已存在 Skill
+
+            skill_id = result1["id"]
+            public_id = result1["public_id"]
+
+            file_name = f"{slug}_v{version}.zip"
+            storage_key = f"skills/{public_id}/{version}/{file_name}"
+
+            sql9 = """
+            INSERT INTO skill_versions
+                (version, file_name, skill_id, storage_key, size_bytes)
+            VALUES
+                (%s, %s, %s, %s, %s)
+            """
+
+            cursor.execute(
+                sql9,
+                (
+                    version,
+                    file_name,
+                    skill_id,
+                    storage_key,
+                    size_bytes
+                )
+            )
+
+            version_id = cursor.lastrowid
+
+            sql11 = """
+            UPDATE skills
+            SET summary = %s,
+                readme_html = %s,
+                latest_version_id = %s
+            WHERE id = %s
+            """
+
+            cursor.execute(
+                sql11,
+                (
+                    summary,
+                    readme_html,
+                    version_id,
+                    skill_id
+                )
+            )
+
+        self.conn.commit()
+
+        return {
+            "file_name": file_name,
+            "storage_key": storage_key
+        }
+
+     except Exception:
+        self.conn.rollback()
+        raise
+
+     finally:
+        cursor.close()

@@ -1,8 +1,8 @@
 
 from datetime import datetime
 from pydantic import BaseModel
-
-
+from enum import Enum
+from fastapi import UploadFile
 class SkillSearchParams(BaseModel):
     q: str | None       
     category: str | None 
@@ -26,6 +26,7 @@ class SkillSearchResponse(BaseModel):
     page: int
     size: int
 class All_Skill_Versions(BaseModel):
+    id:int
     skill_name:str
     version:str
     size_bytes:int
@@ -41,6 +42,37 @@ class Sc_Find_Zip_Request(BaseModel):
     skill_versions_id:int
 class Sc_Download_Zip_Request(BaseModel):
     id:int
+class Sc_Skill_Tags(str,Enum):
+    python="python"
+    javascript="javascript"
+    email="email"
+    crawler="crawler"
+    api="api"
+    ai="ai"
+    webhook="webhook"
+    report="report"
+    excel="excel"
+    pdf="pdf"
+class Sc_Skill_Categories(str,Enum):
+    web_dev="web-dev"
+    data_ai="data-ai"
+    automation="automation"
+    productivity="productivity"
+    devops="devops"
 
+class Sc_Upload_Zip_request(BaseModel):
+    name:str
+    version:str
+    token:str
+    category:Sc_Skill_Categories
+    tags:Sc_Skill_Tags
+    readme_html:str
+    summary:str
+    slug:str
+class Sc_Upload_Zip_response(BaseModel):
+    message: str
+    file_name: str
+    storage_key: str
+    
   
 

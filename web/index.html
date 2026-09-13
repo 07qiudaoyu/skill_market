@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技能市 — 给 agent 的技能市场</title>
+  <meta name="description" content="搜技能，看指令原文，下载 zip。agent 读完指令，就能用它。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========== 页头 ========== -->
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#" aria-label="技能市 首页">
+        <span class="brand-seal" aria-hidden="true">技</span>
+        <span class="brand-text">
+          <strong>技能市</strong>
+          <small>SKILL&nbsp;MARKET</small>
+        </span>
+      </a>
+
+      <nav class="header-nav" aria-label="主导航">
+        <a href="#skills-grid-section">浏览技能</a>
+        <a href="#format-note">技能格式</a>
+      </nav>
+
+      <form class="header-search" role="search" id="search-form">
+        <label class="visually-hidden" for="search-input">搜索技能</label>
+        <input
+          type="search"
+          id="search-input"
+          placeholder="搜索技能、标签…"
+          autocomplete="off"
+        >
+      </form>
+
+      <div class="auth-area" id="auth-area"></div>
+
+      <button class="btn btn-primary upload-btn" id="upload-btn" type="button">上传技能</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== Hero ========== -->
+    <section class="hero">
+      <div class="shell hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow">SKILL.MD · 给 agent 的指令包</p>
+          <h1 class="hero-title">给 agent 的技能市场</h1>
+          <p class="hero-lede">
+            搜技能，看指令原文，下载 zip。agent 读完指令，就能用它。
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#skills-grid-section">浏览技能</a>
+            <a class="btn btn-ghost" href="#format-note">看看指令长相</a>
+          </div>
+          <p class="hero-stats" id="hero-stats" aria-live="polite">
+            <span>— 个技能</span><span class="sep" aria-hidden="true">·</span>
+            <span>— 个版本</span><span class="sep" aria-hidden="true">·</span>
+            <span>— 个分类</span>
+          </p>
+        </div>
+
+        <!-- 签名元素：正在被读取的指令卡 -->
+        <div class="hero-card-wrap" aria-hidden="true">
+          <article class="md-card">
+            <header class="md-card-head">
+              <span class="md-path">auto-email-sender / SKILL.md</span>
+              <span class="md-status" id="md-status">读取中<span class="caret"></span></span>
+            </header>
+            <pre class="md-body" id="md-body"></pre>
+            <footer class="md-card-foot">
+              <span class="md-foot-state" id="md-foot-state">▍正在读第 1 行…</span>
+            </footer>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 工具条 ========== -->
+    <section class="toolbar" aria-label="筛选与排序">
+      <div class="shell toolbar-inner">
+        <div class="toolbar-row">
+          <div class="cat-links" id="category-row" role="group" aria-label="按分类筛选">
+            <!-- 分类链接由 JS 渲染 -->
+          </div>
+          <div class="toolbar-right">
+            <span class="active-filter" id="active-filter" hidden></span>
+            <span class="source-badge" id="source-badge" title="页面数据来源">示例数据</span>
+            <label class="sort-label" for="sort-select">排序</label>
+            <select id="sort-select" class="sort-select">
+              <option value="newest">最新</option>
+              <option value="downloads">下载最多</option>
+              <option value="rating">评分最高</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 技能陈列 ========== -->
+    <section class="grid-section" id="skills-grid-section" aria-label="技能列表">
+      <div class="shell">
+        <div class="grid-section-head">
+          <h2>在售的手艺</h2>
+          <p class="grid-section-note" id="grid-count"></p>
+        </div>
+
+        <div class="skill-grid" id="skill-grid">
+          <!-- 技能卡由 JS 渲染 -->
+        </div>
+
+        <div class="empty-state" id="empty-state" hidden>
+          <h3>没有匹配的技能</h3>
+          <p>换个关键字试试，或者清掉筛选条件，把全部手艺再看一遍。</p>
+          <button class="btn btn-primary" id="clear-filters" type="button">清除全部筛选</button>
+        </div>
+
+        <!-- 技能格式说明 -->
+        <aside class="format-note" id="format-note">
+          <div class="format-note-copy">
+            <h3>一份技能，就是一个 zip</h3>
+            <p>
+              解压到你的 agent 目录，它会自己找到 SKILL.md 并读完全部指令 ——
+              就像上面那张卡正在发生的事。README.md 留给人读，SKILL.md 留给 agent 读。
+            </p>
+          </div>
+          <pre class="format-note-tree" aria-label="技能包目录结构">skill.zip
+├── README.md    ← 给人看的说明
+├── SKILL.md     ← 给 agent 读的指令
+└── skill.json   ← 名称、版本、标签</pre>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== 页脚 ========== -->
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <div class="footer-brand">
+        <span class="brand-seal brand-seal--footer" aria-hidden="true">技</span>
+        <div>
+          <strong>技能市</strong>
+          <p>给 agent 的技能市场</p>
+        </div>
+      </div>
+      <pre class="footer-cli" aria-hidden="true">$ skill get auto-email-sender
+✓ 已习得 — 你的 agent 现在会发邮件了</pre>
+      <p class="footer-meta">
+        Skill Market · 前端由 FastAPI 托管于 <code>/</code>，接口在 <code>/api/v1</code> ·
+        数据源：<span id="footer-source">示例数据</span>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ========== 登录 / 注册弹窗 ========== -->
+  <div class="modal" id="auth-modal" hidden>
+    <div class="modal-backdrop" data-close-auth></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <button class="modal-close" type="button" data-close-auth aria-label="关闭">×</button>
+      <h2 class="modal-title" id="auth-title">登录技能市</h2>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab is-active" id="tab-login" role="tab" aria-selected="true">登录</button>
+        <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false">注册</button>
+      </div>
+
+      <form class="auth-form" id="login-form">
+        <p class="form-error" id="login-error" hidden></p>
+        <div class="form-field">
+          <label for="login-email">邮箱</label>
+          <input type="email" id="login-email" required autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div class="form-field">
+          <label for="login-password">密码</label>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="8 位以上">
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">登录</button>
+        <p class="form-hint">登录后获得 token，上传技能时自动填入。</p>
+      </form>
+
+      <form class="auth-form" id="register-form" hidden>
+        <p class="form-error" id="register-error" hidden></p>
+        <div class="form-field">
+          <label for="reg-email">邮箱</label>
+          <input type="email" id="reg-email" required autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div class="form-field">
+          <label for="reg-name">用户名</label>
+          <input type="text" id="reg-name" required minlength="2" maxlength="20" placeholder="2–20 个字符">
+        </div>
+        <div class="form-field">
+          <label for="reg-password">密码</label>
+          <input type="password" id="reg-password" required minlength="8" maxlength="32" autocomplete="new-password" placeholder="8–32 位">
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">注册</button>
+        <p class="form-hint">注册成功后请用邮箱登录。</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== 上传技能弹窗 ========== -->
+  <div class="modal" id="upload-modal" hidden>
+    <div class="modal-backdrop" data-close-upload></div>
+    <div class="modal-panel modal-panel--wide" role="dialog" aria-modal="true" aria-labelledby="upload-title">
+      <button class="modal-close" type="button" data-close-upload aria-label="关闭">×</button>
+      <h2 class="modal-title" id="upload-title">上传技能</h2>
+
+      <form class="upload-form" id="upload-form">
+        <p class="form-error" id="upload-error" hidden></p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="up-name">技能名称</label>
+            <input type="text" id="up-name" name="name" required placeholder="邮件自动发送工具">
+          </div>
+          <div class="form-field">
+            <label for="up-slug">slug（URL 标识）</label>
+            <input type="text" id="up-slug" name="slug" required pattern="[a-z0-9-]+" placeholder="auto-email-sender">
+          </div>
+          <div class="form-field">
+            <label for="up-version">版本号</label>
+            <input type="text" id="up-version" name="version" required placeholder="1.0.0">
+          </div>
+          <div class="form-field">
+            <label for="up-category">分类</label>
+            <select id="up-category" name="category" required>
+              <option value="web-dev">Web开发</option>
+              <option value="data-ai">数据与AI</option>
+              <option value="automation">自动化工具</option>
+              <option value="productivity">效率工具</option>
+              <option value="devops">运维与部署</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="up-tags">标签</label>
+          <input type="text" id="up-tags" name="tags" required placeholder="email,smtp">
+          <p class="form-hint">多个标签用英文逗号分隔；标签需已存在于后端标签表（按 slug 关联）。</p>
+        </div>
+
+        <div class="form-field">
+          <label for="up-summary">简介</label>
+          <input type="text" id="up-summary" name="summary" required placeholder="一句话说明这个技能让 agent 会做什么">
+        </div>
+
+        <div class="form-field">
+          <label for="up-readme">README（HTML）</label>
+          <textarea id="up-readme" name="readme_html" rows="3" required placeholder="&lt;h1&gt;技能说明&lt;/h1&gt;&lt;p&gt;详细用法…&lt;/p&gt;"></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="up-zip">zip 文件</label>
+          <input type="file" id="up-zip" name="upload_zip" accept=".zip" required>
+        </div>
+
+        <div class="form-field">
+          <label for="up-token">Token</label>
+          <input type="text" id="up-token" name="token" class="token-input" required placeholder="登录后自动填入，也可手动粘贴">
+          <p class="form-hint">当前后端要求在表单里携带 token；后端改为请求头鉴权后，这个输入框会移除。</p>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="upload-submit">上传</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

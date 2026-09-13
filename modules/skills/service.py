@@ -3,6 +3,9 @@ from fastapi import HTTPException
 import os
 from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
+from app.core.security import check_token
+from pathlib import Path
+from fastapi import UploadFile
 class SkillsService:
     def __init__(self, repository: SkillsRepository):
         self.repository = repository
@@ -75,5 +78,56 @@ class SkillsService:
                "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}"'
             }
         )
-
+    async def SE_Upload_Zip(self,
+                    upload_zip: UploadFile,
+                    name: str,
+                    version: str,
+                    token:str,
+                    category: str,
+                    tags: str,
+                    readme_html: str,
+                    summary: str,
+                    slug: str
+        ):
+        #解码
+        result1=check_token(token)
+        if result1 is None:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="token错误!"
+                    )
+        user_id=result1["id"]
+        #将str变为list
+        change_tags=tags.split(",")
+        #读取上传文件内容，计算大小
+        file_content=await upload_zip.read()
+        size_bytes=len(file_content)
+        result=self.repository.Re_Upload_Zip(name=name,
+                                             version=version,
+                                             user_id=user_id,
+                                             category=category,
+                                             readme_html=readme_html,
+                                             summary=summary,
+                                             slug=slug,
+                                             change_tags=change_tags,
+                                             size_bytes=size_bytes
+                                             )
+        #这里就开始写上传的函数操作
+        file_path= Path("data") / result["storage_key"]
+        file_name=result["file_name"]
+        headers={
+            "Content-Disponsition":f'attachment; filename="{file_name}"'
+        }
+        file_path.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+        with file_path.open("wb") as buffer:
+         buffer.write(file_content)
+        return {
+        "message": "文件上传成功",
+        "file_name": file_name,
+        "storage_key": result["storage_key"]
+    }
+        
                

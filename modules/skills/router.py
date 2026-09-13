@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, status
 
-from .schemas import SkillSearchResponse,Find_ZIP_Response
+from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_response,Sc_Skill_Categories
 from .service import SkillsService
 from .dependencies import get_skill_service
+from fastapi import File, Form, UploadFile
 
 router = APIRouter(
     prefix="/skills",
@@ -65,4 +66,33 @@ def DOWNLOAD_ZIP(
 ):
     return service.Se_Download_Zip(
         skill_versions_id=id
+    )
+@router.post(
+    "/upload_zip",
+    response_model=Sc_Upload_Zip_response,
+    status_code=status.HTTP_200_OK
+)
+async def Ro_Upload_Zip(
+    name: str = Form(...),
+    version: str = Form(...),
+    token: str = Form(...),
+    category: Sc_Skill_Categories = Form(...),
+    tags: str = Form(...),
+    readme_html: str = Form(...),
+    summary: str = Form(...),
+    slug: str = Form(...),
+    
+    upload_zip: UploadFile = File(...),
+    service:SkillsService=Depends(get_skill_service)
+):
+    return await service.SE_Upload_Zip(
+        name=name,
+        version=version,
+        token=token,
+        category=category.value,
+        tags=tags,
+        readme_html=readme_html,
+        summary=summary,
+        slug=slug,
+        upload_zip=upload_zip
     )
