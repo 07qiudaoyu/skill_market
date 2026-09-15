@@ -62,11 +62,14 @@ def REQUEST_FILE(
 )
 def DOWNLOAD_ZIP(
     id:int,
+    token:str,
     service:SkillsService=Depends(get_skill_service)
 ):
     return service.Se_Download_Zip(
-        skill_versions_id=id
+        skill_versions_id=id,
+        token=token
     )
+
 @router.post(
     "/upload_zip",
     response_model=Sc_Upload_Zip_response,

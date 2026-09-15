@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from app.core.security import check_token
 from pathlib import Path
 from fastapi import UploadFile
+from app.core.security import check_token
 class SkillsService:
     def __init__(self, repository: SkillsRepository):
         self.repository = repository
@@ -57,7 +58,15 @@ class SkillsService:
             file_path,
             filename=os.path.basename(file_path)
         )
-    def Se_Download_Zip(self,skill_versions_id:int):#本地的
+    def Se_Download_Zip(self,skill_versions_id:int,token:str):#本地的
+        payload=check_token(token)
+        
+        if payload is None:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="token错误!游客现不支持下载skill,请登入"
+                    )
+        user_id=payload["id"]
         result=self.repository.Re_Find_Zip(skill_versions_id=skill_versions_id)
         if not result:
             raise HTTPException(status_code=404,detail="未找到版本信息")
@@ -71,6 +80,7 @@ class SkillsService:
                     if not chunk:
                         break
                     yield chunk
+        self.repository.Re_Download_zip(user_id,skill_versions_id)
         return StreamingResponse(
             file_download(file_path),
             media_type="application/zip",
@@ -130,4 +140,6 @@ class SkillsService:
         "storage_key": result["storage_key"]
     }
         
+               
+    
                

@@ -42,6 +42,8 @@ class Sc_Find_Zip_Request(BaseModel):
     skill_versions_id:int
 class Sc_Download_Zip_Request(BaseModel):
     id:int
+    token:str
+####################
 class Sc_Skill_Tags(str,Enum):
     python="python"
     javascript="javascript"
@@ -73,6 +75,6 @@ class Sc_Upload_Zip_response(BaseModel):
     message: str
     file_name: str
     storage_key: str
-    
+
   
 

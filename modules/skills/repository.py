@@ -112,7 +112,18 @@ select storage_key from skill_versions where id=%s
                   return result
            finally:
                   cursor.close()
-    
+    def Re_Download_zip(self,user_id:int,skill_versions_id:int):
+           cursor=self.conn.cursor()
+           try:
+                  sql="""
+insert into users_download(user_id,version_id)
+values(%s,%s)
+"""
+                  cursor.execute(sql,(user_id,skill_versions_id,))
+                  self.conn.commit()
+           finally:
+                  cursor.close()
+                  
     def Re_Upload_Zip(
         self,
         name: str,
