@@ -4,7 +4,7 @@
   "description": "自动读取数据源并生成 Excel/PDF 格式的日报。",
   "version": "1.0.0",
   "license": "MIT",
-  "category": "自动化工具",
+  "category": "automation",
   "tags": ["report", "excel", "pdf", "automation"],
   "agents": ["python"],
   "dependencies": [],

@@ -6,3 +6,5 @@ PyJWT
 email-validator
 python-dotenv
 python-multipart
+PyYAML
+

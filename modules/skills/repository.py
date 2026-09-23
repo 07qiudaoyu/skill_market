@@ -1,7 +1,10 @@
 
-import uuid
-
-
+from app.core.exceptions import Ex_upload_file
+from validator import check_file_zip,check_files
+from fastapi import UploadFile
+from zipfile import ZipFile
+from fastapi import HTTPException
+MAX_file_zip=52428800#也就是50MB的内存大小，这个是为解压的文件
 class SkillsRepository:
     def __init__(self, conn):
         self.conn = conn
@@ -87,6 +90,7 @@ select
             sv.skill_id,
             sv.version,
             sv.size_bytes,
+            sv.extract_file_bytes,
             sv.file_name,
             sv.created_at
  from skills
@@ -101,6 +105,7 @@ order by sv.created_at desc
                 return result
             finally:
                    cursor.close()
+#================================================================
     def Re_Find_Zip(self,skill_versions_id:int):
            cursor=self.conn.cursor()
            try:
@@ -112,6 +117,7 @@ select storage_key from skill_versions where id=%s
                   return result
            finally:
                   cursor.close()
+#=================================================================
     def Re_Download_zip(self,user_id:int,skill_versions_id:int):
            cursor=self.conn.cursor()
            try:
@@ -123,198 +129,131 @@ values(%s,%s)
                   self.conn.commit()
            finally:
                   cursor.close()
-                  
-    def Re_Upload_Zip(
-        self,
-        name: str,
+#=========================================================================
+    async def Re_Upload_Zip(self,
+                      upload_zip:UploadFile,
+                      name:str,
+        tags:list[str],
+        category:str,
         version: str,
-        user_id: int,
-        category: str,
-        change_tags: list[str],
+        owner_id:int,#在service里进行token解码
         readme_html: str,
         summary: str,
-        slug: str,
-        size_bytes: int
-):
-     cursor = self.conn.cursor()
+        slug:str
+        ):
+           try:
+            cursor=self.conn.cursor()
+           #1.先对文件进行审核在搞数据库的写入
+            result1=await check_file_zip.Check_file_zip(upload_zip)#处理了内存，file是否缺失等问题
+           #2.处理解压后的审核工作
+            file_content = result1["file_content"]
+            result2=await check_files.Check_Files(file_content=file_content,
+                      tags=tags,
+                      category=category,
+                        version=version,
+                        summary=summary,
+                        slug=slug)
+           #1和2都通过的话，我们开始写insert
+            
+            sql1="""
+select * from skills where slug=%s
+"""
+            cursor.execute(sql1,(slug,))
+            result=cursor.fetchone()
+            if not result:#没人发布过
+                  sql6="""
+                  select id from categories where slug=%s
+                  """
+                  cursor.execute(sql6,(category,))
+                  result6=cursor.fetchone()
+                  if not result6:#分类不存在时result6为None,直接取["id"]会TypeError
+                        raise HTTPException(status_code=400,detail="分类不存在")
+                  sql2="""
+insert into skills(slug,public_id,display_name,owner_id,summary,readme_html,category_id)values(%s,%s,%s,%s,%s,%s,%s)
+"""
+                  
+                  temp_public=f"tmp-{slug}"#public_id先占位:不能写死1,第二个技能会撞唯一键uk_public_id
+                  cursor.execute(sql2,(slug,temp_public,name,owner_id,summary,readme_html,result6["id"]))
+                  new_id=cursor.lastrowid#刚插入那行的自增id,取代原来select回查的sql3
+                  uuid=f"uuid-{new_id}"
+                  cursor.execute("update skills set public_id=%s where id=%s",(uuid,new_id))
+                  storage_key=f"skills/{uuid}/{version}/{slug}_v{version}.zip"
+                  sql4="""
+insert into skill_versions(skill_id,version,size_bytes,extract_file_bytes,file_name,storage_key)
+values(%s,%s,%s,%s,%s,%s)
+"""
+                  file_name=f"{slug}_v{version}.zip"
+                  cursor.execute(sql4,(new_id,version,result1["zip_size"],
+                  result1["uncompressed_size"],file_name,storage_key,))
+                  new_version_id=cursor.lastrowid#skill_versions的自增id,取代回查的sql5
+                  placeholders = ",".join(["%s"] * len(tags))
+                  sql7=f"""
+select id from tags where slug in ({placeholders})
+"""
+                  cursor.execute(sql7,tags)
+                  result7=cursor.fetchall()
+                  for tagId in result7:
+                         cursor.execute("insert into skill_tags(skill_id,tag_id)values(%s,%s)", (new_id,tagId["id"],))
+                       
+                  sql8="""
+update skills set latest_version_id=%s where slug=%s
+"""
+                  cursor.execute(sql8,(new_version_id,slug,))
+            else:
+                  if owner_id!=result["owner_id"]:#错误
+                         Ex_upload_file.Ex_user_ids()
+                  #更新版本
+                  uuid=f"uuid-{result['id']}"
+                  storage_key=f"skills/{uuid}/{version}/{slug}_v{version}.zip"
+                  sql9="""
+                  insert into skill_versions(skill_id,version,size_bytes,extract_file_bytes,file_name,storage_key)
+                  values(%s,%s,%s,%s,%s,%s)
+                  """
+                  file_name=f"{slug}_v{version}.zip"
+                  cursor.execute(sql9,(result["id"],version,result1["zip_size"],
+                  result1["uncompressed_size"],file_name,storage_key,))
+                  new_version_id=cursor.lastrowid#同if分支,取代回查的sql10
+                  sql11="""
+update skills set latest_version_id=%s where id=%s
+"""
+                  cursor.execute(sql11,(new_version_id,result["id"],))
+            self.conn.commit()
+           except HTTPException:
+               raise 
+           except Exception:
+                 self.conn.rollback()
+                 check_files.Ex_upload_file.Ex_insert_zip()
+           finally: 
+                 cursor.close()
+           return {
+                        "storage_key":storage_key,
+                        "file_name": file_name,
+                        "file_content":file_content
+                 }
 
-     try:
-        sql1 = """
-        SELECT *
-        FROM skills
-        WHERE slug = %s AND owner_id = %s
-        """
 
-        cursor.execute(sql1, (slug, user_id))
-        result1 = cursor.fetchone()
-
-        if not result1:  # 新技能
-
-            sql2 = """
-            SELECT *
-            FROM categories
-            WHERE slug = %s
-            """
-
-            cursor.execute(sql2, (category,))
-            result2 = cursor.fetchone()
-
-            if not result2:
-                raise ValueError("分类不存在")
-
-            sql3 = """
-            INSERT INTO skills
-                (public_id, display_name, summary, readme_html, slug, owner_id, category_id)
-            VALUES
-                (%s, %s, %s, %s, %s, %s, %s)
-            """
-
-            cursor.execute(
-                sql3,
-                (
-                    str(uuid.uuid4()),
-                    name,
-                    summary,
-                    readme_html,
-                    slug,
-                    user_id,
-                    result2["id"]
-                )
-            )
-
-            # 获取刚刚插入的 skill_id
-            skill_id = cursor.lastrowid
-
-            # 处理标签
-            if change_tags:
-                placeholders = ",".join(
-                    ["%s"] * len(change_tags)
-                )
-
-                sql5 = f"""
-                SELECT id
-                FROM tags
-                WHERE slug IN ({placeholders})
-                """
-
-                cursor.execute(sql5, change_tags)
-                result5 = cursor.fetchall()
-
-                tag_ids = [
-                    row["id"]
-                    for row in result5
-                ]
-
-                for tag_id in tag_ids:
-                    sql_tag = """
-                    INSERT INTO skill_tags
-                        (skill_id, tag_id)
-                    VALUES
-                        (%s, %s)
-                    """
-
-                    cursor.execute(
-                        sql_tag,
-                        (skill_id, tag_id)
-                    )
-
-            # 插入版本
-            public_id = f"uuid-{skill_id}"
-            file_name = f"{slug}_v{version}.zip"
-            storage_key = f"skills/{public_id}/{version}/{file_name}"
-
-            sql6 = """
-            INSERT INTO skill_versions
-                (version, file_name, skill_id, storage_key, size_bytes)
-            VALUES
-                (%s, %s, %s, %s, %s)
-            """
-
-            cursor.execute(
-                sql6,
-                (
-                    version,
-                    file_name,
-                    skill_id,
-                    storage_key,
-                    size_bytes
-                )
-            )
-
-            version_id = cursor.lastrowid
-
-            sql8 = """
-            UPDATE skills
-            SET public_id = %s,
-                latest_version_id = %s
-            WHERE id = %s
-            """
-
-            cursor.execute(
-                sql8,
-                (
-                    public_id,
-                    version_id,
-                    skill_id
-                )
-            )
-
-        else:  # 已存在 Skill
-
-            skill_id = result1["id"]
-            public_id = result1["public_id"]
-
-            file_name = f"{slug}_v{version}.zip"
-            storage_key = f"skills/{public_id}/{version}/{file_name}"
-
-            sql9 = """
-            INSERT INTO skill_versions
-                (version, file_name, skill_id, storage_key, size_bytes)
-            VALUES
-                (%s, %s, %s, %s, %s)
-            """
-
-            cursor.execute(
-                sql9,
-                (
-                    version,
-                    file_name,
-                    skill_id,
-                    storage_key,
-                    size_bytes
-                )
-            )
-
-            version_id = cursor.lastrowid
-
-            sql11 = """
-            UPDATE skills
-            SET summary = %s,
-                readme_html = %s,
-                latest_version_id = %s
-            WHERE id = %s
-            """
-
-            cursor.execute(
-                sql11,
-                (
-                    summary,
-                    readme_html,
-                    version_id,
-                    skill_id
-                )
-            )
-
-        self.conn.commit()
-
-        return {
-            "file_name": file_name,
-            "storage_key": storage_key
-        }
-
-     except Exception:
-        self.conn.rollback()
-        raise
-
-     finally:
-        cursor.close()
+     
+#====================================================================
+    def Re_All_Tags(self):###用接口进行tags的所有返回
+          cursor=self.conn.cursor()
+          try:
+              sql="""
+select * from tags
+"""
+              cursor.execute(sql)
+              result=cursor.fetchall()
+              return result#name给前端，slug给后端
+          finally:
+                cursor.close()
+#====================================================================
+    def Re_All_categories(self):###用接口进行categories的所有返回
+          cursor=self.conn.cursor()
+          try:
+              sql="""
+select id,name,slug from categories
+"""
+              cursor.execute(sql)
+              result=cursor.fetchall()
+              return result#name给前端，slug给后端
+          finally:
+                cursor.close()

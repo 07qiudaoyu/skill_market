@@ -14,6 +14,7 @@ primary key(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
     cursor.execute(sql)
+    print("建表成功")
     conn.commit()
 except pymysql.Error as e:
     print(f"数据库错误：{e}")

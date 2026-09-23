@@ -79,8 +79,8 @@ async def Ro_Upload_Zip(
     name: str = Form(...),
     version: str = Form(...),
     token: str = Form(...),
-    category: Sc_Skill_Categories = Form(...),
-    tags: str = Form(...),
+    category: str= Form(...),
+    tags: list[str] = Form(...),
     readme_html: str = Form(...),
     summary: str = Form(...),
     slug: str = Form(...),
@@ -92,10 +92,28 @@ async def Ro_Upload_Zip(
         name=name,
         version=version,
         token=token,
-        category=category.value,
+        category=category,
         tags=tags,
         readme_html=readme_html,
         summary=summary,
         slug=slug,
         upload_zip=upload_zip
     )
+#=========================================
+@router.get(#用于前端
+    "/All_Tags",
+    status_code=status.HTTP_200_OK
+)
+def Ro_All_Tags(service:SkillsService=Depends(get_skill_service)):
+    result=service.Se_All_tags()
+    return result
+
+@router.get(#用于前端
+    "/All_categories",
+    status_code=status.HTTP_200_OK
+)
+def Ro_All_Categries(service:SkillsService=Depends(get_skill_service)):
+    result=service.Se_All_categories()
+    return result
+
+

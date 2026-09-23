@@ -2,19 +2,23 @@
    技能市 · 前端逻辑
    - 数据优先来自 FastAPI（同源 /api/v1/*），后端不可用时
      自动降级到仓库内真实样例数据
-   - 搜索 / 分类 / 标签 / 排序 / 版本抽屉 / 下载 / 登录 / 上传
-   - 上传表单携带 token 输入（后端改为请求头鉴权后移除）
+   - 分类/标签：从 All_categories / All_Tags 拉取，
+     界面显示中文 name，提交给后端的是 slug
+   - 上传：审核机制（表单值需与 zip 内 skill.json 一致）
+   - 下载：Download_file 需登录 token，游客引导登录
    ============================================================ */
 (function () {
   'use strict';
 
   var API = {
-    search:   '/api/v1/skills/search',
-    versions: '/api/v1/skills/find_versions',
-    download: '/api/v1/skills/request_file',
-    login:    '/api/v1/auth/login',
-    register: '/api/v1/auth/register',
-    upload:   '/api/v1/skills/upload_zip'
+    search:         '/api/v1/skills/search',
+    versions:       '/api/v1/skills/find_versions',
+    download:       '/api/v1/skills/Download_file',
+    login:          '/api/v1/auth/login',
+    register:       '/api/v1/auth/register',
+    upload:         '/api/v1/skills/upload_zip',
+    allTags:        '/api/v1/skills/All_Tags',
+    allCategories:  '/api/v1/skills/All_categories'
   };
 
   var LS_TOKEN = 'skm_token';
@@ -22,13 +26,6 @@
 
   /* ---------- 样例数据（与仓库 data/skills、try/*_insert_try.py 对齐） ---------- */
   var SEED = {
-    categories: [
-      { slug: 'web-dev', name: 'Web开发' },
-      { slug: 'data-ai', name: '数据与AI' },
-      { slug: 'automation', name: '自动化工具' },
-      { slug: 'productivity', name: '效率工具' },
-      { slug: 'devops', name: '运维与部署' }
-    ],
     skills: [
       {
         public_id: 'uuid-001',
@@ -43,8 +40,8 @@
         created_at: '2026-09-01',
         excerpt: '1. 读取邮件模板和收件人列表。\n2. 通过 SMTP 连接发送邮件。\n3. 支持附件发送。\n4. 记录发送日志。',
         versions: [
-          { id: 2, version: '1.1.0', size_bytes: 153600, file_name: 'auto-email-sender_v1.1.0.zip', created_at: '2026-09-01', founder_name: 'admin' },
-          { id: 1, version: '1.0.0', size_bytes: 102400, file_name: 'auto-email-sender_v1.0.0.zip', created_at: '2026-08-20', founder_name: 'admin' }
+          { id: 2, version: '1.1.0', size_bytes: 153600, extract_file_bytes: 129700, file_name: 'auto-email-sender_v1.1.0.zip', created_at: '2026-09-01', founder_name: 'admin' },
+          { id: 1, version: '1.0.0', size_bytes: 102400, extract_file_bytes: 92400, file_name: 'auto-email-sender_v1.0.0.zip', created_at: '2026-08-20', founder_name: 'admin' }
         ]
       },
       {
@@ -60,7 +57,7 @@
         created_at: '2026-08-28',
         excerpt: '1. 连接数据源（数据库/CSV/Excel）。\n2. 按日汇总数据。\n3. 生成 Excel 或 PDF 报告。',
         versions: [
-          { id: 3, version: '1.0.0', size_bytes: 204800, file_name: 'daily-report-generator_v1.0.0.zip', created_at: '2026-08-28', founder_name: 'admin' }
+          { id: 3, version: '1.0.0', size_bytes: 204800, extract_file_bytes: 187300, file_name: 'daily-report-generator_v1.0.0.zip', created_at: '2026-08-28', founder_name: 'admin' }
         ]
       },
       {
@@ -70,15 +67,41 @@
         summary: '输入 URL 自动抓取网页内容并导出为结构化数据。',
         category_name: 'Web开发',
         category_slug: 'web-dev',
-        tags: ['crawler', 'scraping', 'web', 'data'],
+        tags: ['crawler', 'api', 'automation'],
         download_count: 25,
         rating_avg: 4.8,
         created_at: '2026-08-25',
         excerpt: '1. 接收目标 URL。\n2. 解析 HTML 内容。\n3. 提取结构化数据。\n4. 导出为 JSON/CSV。',
         versions: [
-          { id: 4, version: '1.0.0', size_bytes: 307200, file_name: 'web-data-crawler_v1.0.0.zip', created_at: '2026-08-25', founder_name: 'admin' }
+          { id: 4, version: '1.0.0', size_bytes: 307200, extract_file_bytes: 269800, file_name: 'web-data-crawler_v1.0.0.zip', created_at: '2026-08-25', founder_name: 'admin' }
         ]
       }
+    ]
+  };
+
+  /* 枚举降级数据（与数据库 categories / tags 表对齐） */
+  var ENUM_SEED = {
+    categories: [
+      { slug: 'web-dev', name: 'Web开发' },
+      { slug: 'data-ai', name: '数据与AI' },
+      { slug: 'automation', name: '自动化工具' },
+      { slug: 'productivity', name: '效率工具' },
+      { slug: 'devops', name: '运维与部署' }
+    ],
+    tags: [
+      { slug: 'python', name: 'Python' },
+      { slug: 'javascript', name: 'JavaScript' },
+      { slug: 'email', name: '邮件' },
+      { slug: 'crawler', name: '爬虫' },
+      { slug: 'api', name: 'API' },
+      { slug: 'ai', name: '人工智能' },
+      { slug: 'webhook', name: 'Webhook' },
+      { slug: 'report', name: '报表' },
+      { slug: 'excel', name: 'Excel' },
+      { slug: 'pdf', name: 'PDF' },
+      { slug: 'automation', name: '自动化' },
+      { slug: 'smtp', name: 'SMTP' },
+      { slug: 'attachment', name: '附件' }
     ]
   };
 
@@ -98,15 +121,26 @@
 
   var state = {
     q: '',
-    category: 'all',
-    tag: '',
+    category: 'all',   // 存 slug，'all' 表示全部
+    tag: '',           // 存 slug，'' 表示全部
     sort: 'newest',
-    source: 'seed',      // 'seed' | 'live'
-    liveLocked: false,   // 后端确认不可用后锁定，避免反复失败
-    openDrawers: {}      // public_id -> true
+    source: 'seed',    // 'seed' | 'live'
+    liveLocked: false,
+    openDrawers: {}
   };
 
-  var versionsCache = {};  // public_id -> versions[]（live 模式懒加载）
+  /* 枚举：显示用 name，提交用 slug */
+  var enums = {
+    categories: [],            // [{slug, name}]
+    tags: [],                  // [{slug, name}]
+    catNameBySlug: {},
+    catSlugByName: {},
+    tagNameBySlug: {},
+    tagSlugByName: {},
+    live: false
+  };
+
+  var versionsCache = {};
   var lastItems = [];
 
   var $ = function (id) { return document.getElementById(id); };
@@ -158,21 +192,62 @@
   function getToken() { return localStorage.getItem(LS_TOKEN) || ''; }
   function getName() { return localStorage.getItem(LS_NAME) || ''; }
 
+  /* ---------- 枚举加载（All_categories / All_Tags，失败降级） ---------- */
+  function fetchJson(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function applyEnums(categories, tags, live) {
+    enums.categories = categories;
+    enums.tags = tags;
+    enums.live = live;
+    enums.catNameBySlug = {};
+    enums.catSlugByName = {};
+    categories.forEach(function (c) {
+      enums.catNameBySlug[c.slug] = c.name;
+      enums.catSlugByName[c.name] = c.slug;
+    });
+    enums.tagNameBySlug = {};
+    enums.tagSlugByName = {};
+    tags.forEach(function (t) {
+      enums.tagNameBySlug[t.slug] = t.name;
+      enums.tagSlugByName[t.name] = t.slug;
+    });
+  }
+
+  function loadEnums() {
+    return Promise.all([
+      fetchJson(API.allCategories),
+      fetchJson(API.allTags)
+    ])
+      .then(function (results) {
+        var cats = Array.isArray(results[0]) && results[0].length
+          ? results[0].map(function (c) { return { slug: c.slug, name: c.name }; })
+          : ENUM_SEED.categories;
+        var tags = Array.isArray(results[1]) && results[1].length
+          ? results[1].map(function (t) { return { slug: t.slug, name: t.name }; })
+          : ENUM_SEED.tags;
+        applyEnums(cats, tags, true);
+      })
+      .catch(function () {
+        applyEnums(ENUM_SEED.categories, ENUM_SEED.tags, false);
+      });
+  }
+
   /* ---------- 数据获取 ---------- */
   function fetchLiveItems() {
     var params = new URLSearchParams();
     if (state.q) params.set('q', state.q);
-    if (state.category !== 'all') params.set('category', state.category); // 后端按 slug 匹配
-    if (state.tag) params.set('tags', state.tag);
+    if (state.category !== 'all') params.set('category', state.category); // slug
+    if (state.tag) params.set('tags', state.tag);                        // slug
     params.set('sort', state.sort);
     params.set('page', '1');
     params.set('size', '50');
 
-    return fetch(API.search + '?' + params.toString())
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
+    return fetchJson(API.search + '?' + params.toString())
       .then(function (data) {
         if (!data || !Array.isArray(data.items)) throw new Error('bad payload');
         return data.items;
@@ -181,11 +256,7 @@
 
   function fetchVersions(publicId) {
     if (versionsCache[publicId]) return Promise.resolve(versionsCache[publicId]);
-    return fetch(API.versions + '?public_id=' + encodeURIComponent(publicId))
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
+    return fetchJson(API.versions + '?public_id=' + encodeURIComponent(publicId))
       .then(function (data) {
         var versions = (data && data.versions) || [];
         versionsCache[publicId] = versions;
@@ -214,26 +285,36 @@
     return list;
   }
 
-  /* ---------- 渲染 ---------- */
-  function renderCats() {
-    var row = $('category-row');
-    var html = ['<button type="button" class="cat-link' +
-      (state.category === 'all' ? ' is-active' : '') + '" data-cat="all">全部</button>'];
-    SEED.categories.forEach(function (c) {
-      var count = SEED.skills.filter(function (s) { return s.category_slug === c.slug; }).length;
-      var active = state.category === c.slug ? ' is-active' : '';
-      html.push('<button type="button" class="cat-link' + active + '" data-cat="' + c.slug + '">' +
-        escapeHtml(c.name) + '<span class="cat-count">' + count + '</span></button>');
-    });
-    row.innerHTML = html.join('');
+  /* ---------- 渲染：筛选下拉（显示 name，提交 slug） ---------- */
+  function renderFilterSelects() {
+    var cat = $('filter-category');
+    cat.innerHTML = '<option value="all">全部分类</option>' +
+      enums.categories.map(function (c) {
+        return '<option value="' + escapeHtml(c.slug) + '">' + escapeHtml(c.name) + '</option>';
+      }).join('');
+    cat.value = state.category;
+
+    var tag = $('filter-tag');
+    tag.innerHTML = '<option value="">全部标签</option>' +
+      enums.tags.map(function (t) {
+        return '<option value="' + escapeHtml(t.slug) + '">' + escapeHtml(t.name) + '</option>';
+      }).join('');
+    tag.value = state.tag;
   }
 
   function renderActiveFilter() {
     var el = $('active-filter');
-    if (!state.q && !state.tag) { el.hidden = true; el.innerHTML = ''; return; }
+    if (!state.q && !state.tag && state.category === 'all') {
+      el.hidden = true;
+      el.innerHTML = '';
+      return;
+    }
     var label = [];
     if (state.q) label.push('“' + state.q + '”');
-    if (state.tag) label.push('#' + state.tag);
+    if (state.category !== 'all') {
+      label.push(enums.catNameBySlug[state.category] || state.category);
+    }
+    if (state.tag) label.push('#' + (enums.tagNameBySlug[state.tag] || state.tag));
     el.innerHTML = '筛选：' + escapeHtml(label.join(' ')) +
       ' <button type="button" id="filter-clear" aria-label="清除筛选">×</button>';
     el.hidden = false;
@@ -250,11 +331,19 @@
       el.innerHTML =
         '<span>' + SEED.skills.length + ' 个技能</span><span class="sep" aria-hidden="true">·</span>' +
         '<span>' + versionCount + ' 个版本</span><span class="sep" aria-hidden="true">·</span>' +
-        '<span>' + SEED.categories.length + ' 个分类</span>';
+        '<span>' + enums.categories.length + ' 个分类</span>';
     }
     $('source-badge').textContent = state.source === 'live' ? '后端在线' : '示例数据';
     $('source-badge').classList.toggle('is-live', state.source === 'live');
     $('footer-source').textContent = state.source === 'live' ? '后端 API' : '示例数据';
+  }
+
+  /* 卡片标签：live 数据里是 name，种子数据里是 slug，统一换算 */
+  function tagChip(t) {
+    var display = state.source === 'live' ? t : (enums.tagNameBySlug[t] || t);
+    var slug = state.source === 'live' ? (enums.tagSlugByName[t] || t) : t;
+    return '<button type="button" class="card-tag" data-tagslug="' + escapeHtml(slug) + '">' +
+      escapeHtml(display) + '</button>';
   }
 
   function cardHtml(s) {
@@ -264,10 +353,7 @@
     var excerpt = s.excerpt
       ? '<div class="card-excerpt">' + escapeHtml(s.excerpt) + '</div>'
       : '';
-    var tags = (s.tags || []).map(function (t) {
-      return '<button type="button" class="card-tag" data-tag="' + escapeHtml(t) + '">' +
-        escapeHtml(t) + '</button>';
-    }).join('');
+    var tags = (s.tags || []).map(tagChip).join('');
     var rating = s.rating_avg != null
       ? '<span class="rating">' + Number(s.rating_avg).toFixed(1) + '</span>'
       : '';
@@ -314,13 +400,11 @@
     renderStats(items);
     renderActiveFilter();
 
-    // 重开已展开的抽屉并填充内容
     Object.keys(state.openDrawers).forEach(function (pid) {
       var s = items.filter(function (x) { return x.public_id === pid; })[0];
       if (s) fillDrawer(s);
     });
 
-    // live 模式：为每张卡懒加载版本信息（补版本号与版本数）
     if (state.source === 'live') hydrateVersions(items);
   }
 
@@ -347,7 +431,7 @@
             toggle.textContent = '全部版本（' + versions.length + '）';
           }
         })
-        .catch(function () { /* 版本信息拿不到时保持静默，点击时再提示 */ });
+        .catch(function () { /* 静默，点击时再提示 */ });
     });
   }
 
@@ -376,6 +460,7 @@
         '<tr>' +
           '<td class="' + (i === 0 ? 'ver-latest' : '') + '">v' + escapeHtml(v.version) + '</td>' +
           '<td>' + escapeHtml(formatSize(v.size_bytes)) + '</td>' +
+          '<td>' + (v.extract_file_bytes != null ? escapeHtml(formatSize(v.extract_file_bytes)) : '—') + '</td>' +
           '<td>' + escapeHtml(v.founder_name || '—') + '</td>' +
           '<td>' + escapeHtml(formatDate(v.created_at)) + '</td>' +
           '<td><button type="button" class="dl-link" data-dlid="' + escapeHtml(v.id) +
@@ -385,7 +470,7 @@
     });
     return (
       '<table>' +
-        '<thead><tr><th>版本</th><th>大小</th><th>上传者</th><th>发布日期</th><th></th></tr></thead>' +
+        '<thead><tr><th>版本</th><th>压缩包</th><th>解压后</th><th>上传者</th><th>发布日期</th><th></th></tr></thead>' +
         '<tbody>' + rows.join('') + '</tbody>' +
       '</table>'
     );
@@ -418,11 +503,24 @@
     if (state.openDrawers[pid] && skill) fillDrawer(skill);
   }
 
-  /* ---------- 下载（规范端点：request_file → FileResponse） ---------- */
+  /* ---------- 下载（Download_file 需登录 token） ---------- */
+  function requireLogin(message) {
+    toast(escapeHtml(message));
+    switchAuthTab('login');
+    openModal('auth-modal');
+  }
+
   function downloadZip(id, fileName) {
-    var url = API.download + '?skill_versions_id=' + encodeURIComponent(id);
+    var token = getToken();
+    if (!token) {
+      requireLogin('登录后才能下载技能。');
+      return;
+    }
+    var url = API.download + '?id=' + encodeURIComponent(id) +
+      '&token=' + encodeURIComponent(token);
     fetch(url)
       .then(function (res) {
+        if (res.status === 401) throw new Error('auth');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.blob();
       })
@@ -436,8 +534,12 @@
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
         toast('已开始下载 <code>' + escapeHtml(fileName || 'skill.zip') + '</code>');
       })
-      .catch(function () {
-        toast('后端未响应。启动 FastAPI 后即可下载：<code>' + url + '</code>');
+      .catch(function (err) {
+        if (err.message === 'auth') {
+          requireLogin('登录已过期或 token 无效，请重新登录。');
+        } else {
+          toast('下载失败：后端未响应或文件缺失。');
+        }
       });
   }
 
@@ -476,7 +578,7 @@
     function finish() {
       for (var i = 0; i < lines.length; i++) {
         lines[i].classList.remove('is-reading');
-        lines[i].classList.add(i === lines.length - 1 ? 'is-read' : 'is-read');
+        lines[i].classList.add('is-read');
       }
       status.textContent = '已习得 ✓';
       footState.classList.add('is-done');
@@ -534,8 +636,7 @@
 
   function handleLogin(e) {
     e.preventDefault();
-    var errEl = $('login-error');
-    errEl.hidden = true;
+    $('login-error').hidden = true;
     fetch(API.login, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -552,7 +653,7 @@
         renderAuthArea();
         closeModal('auth-modal');
         $('login-password').value = '';
-        toast('登录成功。上传技能时 token 会自动填入。');
+        toast('登录成功。上传与下载会自动携带 token。');
       })
       .catch(function (err) {
         showError('login-error', err.message || '登录失败，后端未响应。');
@@ -561,8 +662,7 @@
 
   function handleRegister(e) {
     e.preventDefault();
-    var errEl = $('register-error');
-    errEl.hidden = true;
+    $('register-error').hidden = true;
     fetch(API.register, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -585,25 +685,88 @@
       });
   }
 
-  /* ---------- 上传 ---------- */
+  /* ---------- 上传：枚举下拉 + 标签多选 + slug 对照表 ---------- */
+  function renderUploadEnums() {
+    var cat = $('up-category');
+    cat.innerHTML = enums.categories.map(function (c) {
+      return '<option value="' + escapeHtml(c.slug) + '">' + escapeHtml(c.name) + '</option>';
+    }).join('');
+
+    // 标签多选面板：名称给用户看，slug 一并展示供对照 skill.json
+    $('up-tags-panel').innerHTML = enums.tags.map(function (t) {
+      return '<label class="tag-option">' +
+        '<input type="checkbox" value="' + escapeHtml(t.slug) + '">' +
+        '<span class="tag-option-name">' + escapeHtml(t.name) + '</span>' +
+        '<span class="tag-option-slug">' + escapeHtml(t.slug) + '</span>' +
+        '</label>';
+    }).join('');
+
+    // slug↔name 对照表（为上传者打包 skill.json 服务）
+    $('spec-categories-tbody').innerHTML = enums.categories.map(function (c) {
+      return '<tr><td>' + escapeHtml(c.name) + '</td><td><code>' + escapeHtml(c.slug) + '</code></td></tr>';
+    }).join('');
+    $('spec-tags-tbody').innerHTML = enums.tags.map(function (t) {
+      return '<tr><td>' + escapeHtml(t.name) + '</td><td><code>' + escapeHtml(t.slug) + '</code></td></tr>';
+    }).join('');
+    syncTagsToggle();
+  }
+
+  function toggleSpec(open) {
+    var body = $('spec-body');
+    var willOpen = open != null ? open : body.hidden;
+    body.hidden = !willOpen;
+    $('spec-toggle').setAttribute('aria-expanded', String(willOpen));
+  }
+
+  function selectedTagSlugs() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll('#up-tags-panel input:checked'))
+      .map(function (i) { return i.value; });
+  }
+
+  function syncTagsToggle() {
+    var slugs = selectedTagSlugs();
+    var names = slugs.map(function (s) { return enums.tagNameBySlug[s] || s; });
+    var label;
+    if (!slugs.length) label = '选择标签';
+    else if (slugs.length <= 2) label = names.join('、');
+    else label = '已选 ' + slugs.length + ' 项';
+    $('up-tags-toggle').textContent = label;
+  }
+
+  function toggleTagsPanel(open) {
+    var panel = $('up-tags-panel');
+    var willOpen = open != null ? open : panel.hidden;
+    panel.hidden = !willOpen;
+    $('up-tags-toggle').setAttribute('aria-expanded', String(willOpen));
+  }
+
   function openUpload() {
     $('up-token').value = getToken();
     $('upload-error').hidden = true;
+    renderUploadEnums();
+    toggleTagsPanel(false);
+    toggleSpec(false);
     openModal('upload-modal');
   }
 
   function handleUpload(e) {
     e.preventDefault();
-    var errEl = $('upload-error');
-    errEl.hidden = true;
+    $('upload-error').hidden = true;
+
+    var tagSlugs = selectedTagSlugs();
+    if (!tagSlugs.length) {
+      showError('upload-error', '至少选择一个标签。');
+      return;
+    }
 
     var form = $('upload-form');
     var fd = new FormData();
     fd.append('name', $('up-name').value.trim());
     fd.append('slug', $('up-slug').value.trim());
     fd.append('version', $('up-version').value.trim());
-    fd.append('category', $('up-category').value);
-    fd.append('tags', $('up-tags').value.trim());
+    fd.append('category', $('up-category').value);           // slug
+    tagSlugs.forEach(function (s) { fd.append('tags', s); }); // list[str]：重复字段
     fd.append('summary', $('up-summary').value.trim());
     fd.append('readme_html', $('up-readme').value);
     fd.append('token', $('up-token').value.trim());
@@ -620,9 +783,10 @@
         closeModal('upload-modal');
         form.reset();
         $('up-token').value = getToken();
-        toast('上传成功：<code>' + escapeHtml(r.data.file_name || '') + '</code>');
+        syncTagsToggle();
+        toast('上传成功，审核通过：<code>' + escapeHtml(r.data.file_name || '') + '</code>');
         versionsCache = {};
-        state.liveLocked = false;   // 上传成功说明后端在线，重新拉取
+        state.liveLocked = false;
         refresh();
       })
       .catch(function (err) {
@@ -642,11 +806,13 @@
       refresh();
     });
 
-    $('category-row').addEventListener('click', function (e) {
-      var btn = e.target.closest('.cat-link');
-      if (!btn) return;
-      state.category = btn.dataset.cat;
-      renderCats();
+    $('filter-category').addEventListener('change', function (e) {
+      state.category = e.target.value;
+      refresh();
+    });
+
+    $('filter-tag').addEventListener('change', function (e) {
+      state.tag = e.target.value;
       refresh();
     });
 
@@ -655,11 +821,25 @@
       refresh();
     });
 
+    /* 标签多选面板 */
+    $('up-tags-toggle').addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleTagsPanel();
+    });
+    $('up-tags-panel').addEventListener('change', syncTagsToggle);
+
+    /* 上传规范折叠 */
+    $('spec-toggle').addEventListener('click', function () { toggleSpec(); });
+
     document.addEventListener('click', function (e) {
-      // 标签筛选（工具条芯片 + 卡片标签）
+      // 点击面板外关闭标签面板
+      if (!e.target.closest('#tags-widget')) toggleTagsPanel(false);
+
+      // 卡片标签 → 按slug筛选
       var chip = e.target.closest('.card-tag');
       if (chip) {
-        state.tag = state.tag === chip.dataset.tag ? '' : chip.dataset.tag;
+        state.tag = state.tag === chip.dataset.tagslug ? '' : chip.dataset.tagslug;
+        renderFilterSelects();
         refresh();
         return;
       }
@@ -671,7 +851,7 @@
         state.category = 'all';
         state.openDrawers = {};
         $('search-input').value = '';
-        renderCats();
+        renderFilterSelects();
         refresh();
         return;
       }
@@ -708,7 +888,6 @@
       if (e.target.closest('[data-close-upload]')) { closeModal('upload-modal'); return; }
     });
 
-    // 弹窗内 tab 切换
     $('tab-login').addEventListener('click', function () { switchAuthTab('login'); });
     $('tab-register').addEventListener('click', function () { switchAuthTab('register'); });
 
@@ -716,22 +895,24 @@
     $('register-form').addEventListener('submit', handleRegister);
     $('upload-form').addEventListener('submit', handleUpload);
 
-    // ESC 关闭弹窗
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         closeModal('auth-modal');
         closeModal('upload-modal');
+        toggleTagsPanel(false);
       }
     });
   }
 
   /* ---------- 启动 ---------- */
   function init() {
-    renderCats();
     renderAuthArea();
     playMdCard();
     bindEvents();
-    refresh();
+    loadEnums().then(function () {
+      renderFilterSelects();
+      refresh();
+    });
   }
 
   init();

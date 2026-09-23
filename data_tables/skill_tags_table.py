@@ -13,6 +13,7 @@ try:
 """
     cursor.execute(sql)
     conn.commit()
+    print("建表成功")
 except pymysql.Error as e:
     print(f"数据库错误：{e}")
     conn.rollback()

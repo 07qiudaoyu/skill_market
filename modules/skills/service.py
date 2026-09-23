@@ -88,13 +88,14 @@ class SkillsService:
                "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}"'
             }
         )
+    #==========================================================
     async def SE_Upload_Zip(self,
                     upload_zip: UploadFile,
                     name: str,
                     version: str,
                     token:str,
                     category: str,
-                    tags: str,
+                    tags: list[str],
                     readme_html: str,
                     summary: str,
                     slug: str
@@ -108,19 +109,18 @@ class SkillsService:
                     )
         user_id=result1["id"]
         #将str变为list
-        change_tags=tags.split(",")
+    
         #读取上传文件内容，计算大小
-        file_content=await upload_zip.read()
-        size_bytes=len(file_content)
-        result=self.repository.Re_Upload_Zip(name=name,
+        
+        result=await self.repository.Re_Upload_Zip(upload_zip=upload_zip,
+                                             name=name,
                                              version=version,
-                                             user_id=user_id,
+                                             owner_id=user_id,
                                              category=category,
                                              readme_html=readme_html,
                                              summary=summary,
                                              slug=slug,
-                                             change_tags=change_tags,
-                                             size_bytes=size_bytes
+                                             tags=tags
                                              )
         #这里就开始写上传的函数操作
         file_path= Path("data") / result["storage_key"]
@@ -133,13 +133,23 @@ class SkillsService:
     exist_ok=True
 )
         with file_path.open("wb") as buffer:
-         buffer.write(file_content)
+         buffer.write(result["file_content"])
         return {
         "message": "文件上传成功",
         "file_name": file_name,
         "storage_key": result["storage_key"]
     }
-        
-               
+    #===========================================
+
+
+
+
+
+
+         
+    def Se_All_tags(self):#按步骤来最好，现在返回所有的tags
+         return self.repository.Re_All_Tags()
+    def Se_All_categories(self):
+         return self.repository.Re_All_categories()
     
                

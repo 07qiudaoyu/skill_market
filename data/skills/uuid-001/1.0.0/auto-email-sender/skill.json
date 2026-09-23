@@ -4,7 +4,7 @@
   "description": "根据模板自动发送邮件，支持 SMTP 配置和 HTML 模板渲染。",
   "version": "1.0.0",
   "license": "MIT",
-  "category": "Web开发",
+  "category": "web-dev",
   "tags": ["email", "automation", "smtp"],
   "agents": ["python"],
   "dependencies": [],

@@ -78,12 +78,15 @@
       </div>
     </section>
 
-    <!-- ========== 工具条 ========== -->
+    <!-- ========== 工具条：分类/标签 下拉（显示中文 name，提交 slug） ========== -->
     <section class="toolbar" aria-label="筛选与排序">
       <div class="shell toolbar-inner">
         <div class="toolbar-row">
-          <div class="cat-links" id="category-row" role="group" aria-label="按分类筛选">
-            <!-- 分类链接由 JS 渲染 -->
+          <div class="filter-selects">
+            <label class="visually-hidden" for="filter-category">按分类筛选</label>
+            <select id="filter-category" class="filter-select"></select>
+            <label class="visually-hidden" for="filter-tag">按标签筛选</label>
+            <select id="filter-tag" class="filter-select"></select>
           </div>
           <div class="toolbar-right">
             <span class="active-filter" id="active-filter" hidden></span>
@@ -177,7 +180,7 @@
           <input type="password" id="login-password" required autocomplete="current-password" placeholder="8 位以上">
         </div>
         <button class="btn btn-primary btn-block" type="submit">登录</button>
-        <p class="form-hint">登录后获得 token，上传技能时自动填入。</p>
+        <p class="form-hint">登录后获得 token，上传技能与下载 zip 都会自动携带。</p>
       </form>
 
       <form class="auth-form" id="register-form" hidden>
@@ -210,40 +213,76 @@
       <form class="upload-form" id="upload-form">
         <p class="form-error" id="upload-error" hidden></p>
 
+        <!-- 上传规范（依据后端审核器 check_file_zip / check_files 的实际规则） -->
+        <div class="spec-box">
+          <button type="button" class="spec-toggle" id="spec-toggle" aria-expanded="false">
+            上传规范 · 审核会逐项核对这些内容
+            <span class="spec-arrow" aria-hidden="true">▾</span>
+          </button>
+          <div class="spec-body" id="spec-body" hidden>
+            <ol class="spec-list">
+              <li><strong>zip 根目录</strong>必须包含三个文件：README.md、SKILL.md、skill.json（放在子文件夹里审核不通过）。</li>
+              <li><strong>大小限制</strong>：压缩包 ≤ 50MB；解压后全部内容合计 ≤ 100MB。</li>
+              <li><strong>skill.json 一致性</strong>：表单里的 slug、版本号、分类、标签、简介，必须与 skill.json 内的 name、version、category、tags、description 逐项完全一致（标签不看顺序，看集合）。</li>
+              <li><strong>SKILL.md 头部</strong>：文件必须以 <code>---</code> 开头，frontmatter 里的 name 与 slug 一致、description 与简介一致；name 长度 1–64，description 长度 1–1024；文件需 UTF-8 编码。</li>
+              <li><strong>分类与标签</strong>只能使用下方对照表中的值（写入 skill.json 的是 slug，小写）。</li>
+            </ol>
+
+            <div class="spec-tables">
+              <div class="spec-table">
+                <h4>分类对照表 <span>skill.json 的 category 填 slug</span></h4>
+                <table>
+                  <thead><tr><th>名称（表单里选）</th><th>slug（写进 skill.json）</th></tr></thead>
+                  <tbody id="spec-categories-tbody"></tbody>
+                </table>
+              </div>
+              <div class="spec-table">
+                <h4>标签对照表 <span>skill.json 的 tags 填 slug</span></h4>
+                <table>
+                  <thead><tr><th>名称（表单里选）</th><th>slug（写进 skill.json）</th></tr></thead>
+                  <tbody id="spec-tags-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-grid">
           <div class="form-field">
             <label for="up-name">技能名称</label>
             <input type="text" id="up-name" name="name" required placeholder="邮件自动发送工具">
+            <p class="form-hint">展示名称，可自由命名。</p>
           </div>
           <div class="form-field">
-            <label for="up-slug">slug（URL 标识）</label>
+            <label for="up-slug">slug（URL 标识）*</label>
             <input type="text" id="up-slug" name="slug" required pattern="[a-z0-9-]+" placeholder="auto-email-sender">
+            <p class="form-hint">需与 zip 内 skill.json 的 name 一致。</p>
           </div>
           <div class="form-field">
-            <label for="up-version">版本号</label>
+            <label for="up-version">版本号 *</label>
             <input type="text" id="up-version" name="version" required placeholder="1.0.0">
+            <p class="form-hint">需与 zip 内 skill.json 的 version 一致。</p>
           </div>
           <div class="form-field">
-            <label for="up-category">分类</label>
-            <select id="up-category" name="category" required>
-              <option value="web-dev">Web开发</option>
-              <option value="data-ai">数据与AI</option>
-              <option value="automation">自动化工具</option>
-              <option value="productivity">效率工具</option>
-              <option value="devops">运维与部署</option>
-            </select>
+            <label for="up-category">分类 *</label>
+            <select id="up-category" name="category" required></select>
+            <p class="form-hint">选项来自后端分类表（显示中文，提交 slug）；需与 skill.json 的 category 一致。</p>
           </div>
         </div>
 
         <div class="form-field">
-          <label for="up-tags">标签</label>
-          <input type="text" id="up-tags" name="tags" required placeholder="email,smtp">
-          <p class="form-hint">多个标签用英文逗号分隔；标签需已存在于后端标签表（按 slug 关联）。</p>
+          <label id="up-tags-label">标签 *</label>
+          <div class="tags-widget" id="tags-widget">
+            <button type="button" class="tags-toggle" id="up-tags-toggle" aria-expanded="false" aria-labelledby="up-tags-label">选择标签</button>
+            <div class="tags-panel" id="up-tags-panel" hidden></div>
+          </div>
+          <p class="form-hint">下拉多选，选项来自后端标签表（显示中文，提交 slug）；需与 zip 内 skill.json 的 tags 完全一致。</p>
         </div>
 
         <div class="form-field">
-          <label for="up-summary">简介</label>
+          <label for="up-summary">简介 *</label>
           <input type="text" id="up-summary" name="summary" required placeholder="一句话说明这个技能让 agent 会做什么">
+          <p class="form-hint">需与 zip 内 skill.json 的 description 一致。</p>
         </div>
 
         <div class="form-field">
@@ -252,8 +291,9 @@
         </div>
 
         <div class="form-field">
-          <label for="up-zip">zip 文件</label>
+          <label for="up-zip">zip 文件 *</label>
           <input type="file" id="up-zip" name="upload_zip" accept=".zip" required>
+          <p class="form-hint">结构、大小等要求见上方「上传规范」。</p>
         </div>
 
         <div class="form-field">

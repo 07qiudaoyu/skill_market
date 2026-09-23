@@ -30,6 +30,7 @@ class All_Skill_Versions(BaseModel):
     skill_name:str
     version:str
     size_bytes:int
+    extract_file_bytes:int | None = None#解压后大小，老数据可能为空
     file_name:str
     created_at:datetime
     founder_name:str
@@ -44,6 +45,7 @@ class Sc_Download_Zip_Request(BaseModel):
     id:int
     token:str
 ####################
+
 class Sc_Skill_Tags(str,Enum):
     python="python"
     javascript="javascript"
