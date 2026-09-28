@@ -58,8 +58,9 @@ class SkillsService:
             file_path,
             filename=os.path.basename(file_path)
         )
-    def Se_Download_Zip(self,skill_versions_id:int,token:str):#本地的
-        payload=check_token(token)
+    #----------------------------------------------------
+    def Se_Download_Zip(self,skill_versions_id:int,payload:dict):#本地的
+        
         
         if payload is None:
                     raise HTTPException(
@@ -93,7 +94,7 @@ class SkillsService:
                     upload_zip: UploadFile,
                     name: str,
                     version: str,
-                    token:str,
+                    payload:dict,
                     category: str,
                     tags: list[str],
                     readme_html: str,
@@ -101,7 +102,7 @@ class SkillsService:
                     slug: str
         ):
         #解码
-        result1=check_token(token)
+        result1=payload
         if result1 is None:
                     raise HTTPException(
                         status_code=401,

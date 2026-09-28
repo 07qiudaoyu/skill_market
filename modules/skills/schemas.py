@@ -41,11 +41,12 @@ class Find_ZIP_Response(BaseModel):
     versions:list[All_Skill_Versions]
 class Sc_Find_Zip_Request(BaseModel):
     skill_versions_id:int
+    #----------------------------------------------
 class Sc_Download_Zip_Request(BaseModel):
     id:int
-    token:str
-####################
+   # token:str
 
+#--------------------------------------------
 class Sc_Skill_Tags(str,Enum):
     python="python"
     javascript="javascript"
@@ -63,11 +64,11 @@ class Sc_Skill_Categories(str,Enum):
     automation="automation"
     productivity="productivity"
     devops="devops"
-
+#----------------------------------------------
 class Sc_Upload_Zip_request(BaseModel):
     name:str
     version:str
-    token:str
+   # token:str
     category:Sc_Skill_Categories
     tags:Sc_Skill_Tags
     readme_html:str

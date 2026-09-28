@@ -9,11 +9,11 @@ from .schemas import (
     RegisterResponse,
     UserRequest,
     UserResponse,
-    User_Data_Request,
-    User_Data_Response,
-    Users_Datas_Request,
+    
+   
     Users_Datas_Response
     )
+from app.core.middleware import header_token
 from .service import AuthService
 from .dependencies import get_auth_service
 
@@ -59,19 +59,19 @@ def login(
         "message": "登录成功",
         "user_id": user["id"],
         "name": user["name"]
-    }
+    }#----------------------------------------------------------
 @router.post(
     "/user_data",
-    response_model=User_Data_Response,
+   
     status_code=status.HTTP_200_OK
 )
 def data_1_user(
-    item:User_Data_Request,
+    payload:dict=Depends(header_token),
     service:AuthService=Depends(get_auth_service)
 ):
-    TOKEN=service.analyze_token(
-        item.token
-    )
+    payload=payload
+    TOKEN=service.analyze_token(payload)
+
     return {
         "message": "个人用户数据查询成功",
         "user_id":TOKEN["id"],
@@ -79,17 +79,18 @@ def data_1_user(
         "developer":TOKEN["developer"],
         "join_date":TOKEN["join_date"]
         
-    }
+    }#-----------------------------------------------------------------
 @router.post(
     "/users_datas",
+   
     response_model=Users_Datas_Response
 )
 def data_2_user(
-    item:Users_Datas_Request,
+    payload: dict = Depends(header_token),
      service:AuthService=Depends(get_auth_service)
 ):
     TOKEN=service.analyze_token_pro(
-        item.token
+        payload
     )
     return {
         "message":"全用户数据查询成功",

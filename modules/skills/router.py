@@ -4,6 +4,7 @@ from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_respons
 from .service import SkillsService
 from .dependencies import get_skill_service
 from fastapi import File, Form, UploadFile
+from app.core.middleware import header_token
 
 router = APIRouter(
     prefix="/skills",
@@ -55,6 +56,7 @@ def REQUEST_FILE(
     return service.Se_Find_Zip(
         skill_versions_id=skill_versions_id
     )
+#--------------------------------------------
 @router.get(
     
     "/Download_file",
@@ -62,14 +64,14 @@ def REQUEST_FILE(
 )
 def DOWNLOAD_ZIP(
     id:int,
-    token:str,
+    payload:dict =Depends(header_token),
     service:SkillsService=Depends(get_skill_service)
 ):
     return service.Se_Download_Zip(
         skill_versions_id=id,
-        token=token
+        payload=payload
     )
-
+#------------------------------------------
 @router.post(
     "/upload_zip",
     response_model=Sc_Upload_Zip_response,
@@ -78,7 +80,7 @@ def DOWNLOAD_ZIP(
 async def Ro_Upload_Zip(
     name: str = Form(...),
     version: str = Form(...),
-    token: str = Form(...),
+   payload:dict =Depends(header_token),
     category: str= Form(...),
     tags: list[str] = Form(...),
     readme_html: str = Form(...),
@@ -91,7 +93,7 @@ async def Ro_Upload_Zip(
     return await service.SE_Upload_Zip(
         name=name,
         version=version,
-        token=token,
+        payload=payload,
         category=category,
         tags=tags,
         readme_html=readme_html,

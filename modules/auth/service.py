@@ -93,9 +93,9 @@ class AuthService:
             }
         token=token_jwt(payload)
         return token
-    #解码token
-    def analyze_token(self,token:str):
-        result=check_token(token)
+    #解码token---------------------------------------------------------------
+    def analyze_token(self,payload:dict):
+        result=payload
         if result is None:
             raise HTTPException(
                 status_code=401,
@@ -105,9 +105,9 @@ class AuthService:
              ak=result
              UserData=self.repository.data_user(ak["email"])
              return UserData
-    #解码token.pro
-    def analyze_token_pro(self,token:str):
-        result=check_token(token)
+    #解码token.pro-----------------------------------------------------------
+    def analyze_token_pro(self,payload:dict):
+        result=payload
         if result is None:
             raise HTTPException(
                 status_code=401,
@@ -122,7 +122,7 @@ class AuthService:
             result=self.repository.get_all_data()
             return result
              
-
+    #------------------------------------------     
 
 
     
