@@ -22,39 +22,37 @@ type APIReponse struct {
 	Message  string    `json:"message"`
 	Versions []Version `json:"versions"`
 } //这个就是我们要的数据
-func skills(uuid string) {
+func Find(ak []string) error {
 
-	fmt.Println("command:find")
-	fmt.Println("skill:", uuid)
-
-	//if command != "find" {
-	//fmt.Println("错误，目前命令只有find") //这步只是为了先规范我们的输入指令，我们这一步也就只是为了找到skill
-	//return
-	//}
+	if len(ak) != 3 {
+		return fmt.Errorf("格式错误:<command> <uuid>")
+	}
+	uuid := ak[2]
 
 	url := "http://127.0.0.1:8000/api/v1/skills/find_versions?public_id=" + uuid
 
 	resp, err := http.Get(url)
 
 	if err != nil {
-		fmt.Println("url请求失败:", err)
-		return
+		return fmt.Errorf("url请求失败:%w", err)
+
 	}
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("请求失败:", resp.StatusCode)
-		return
+		fmt.Println("请求失败：", resp.StatusCode)
+		return fmt.Errorf("error")
+
 	}
 	//读取数据流
 	resBOBY, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("数据读取错误:", err)
-		return
+		return fmt.Errorf("数据读取错误:%w", err)
+
 	}
 	var result APIReponse                  //动态吗，在我的印象里面var就是一个动态，也就是说result是APIResponse类型
 	err = json.Unmarshal(resBOBY, &result) //这步是啥意思？将resBOBY的数据加载到result，这里的&就像c语言的scanf
 	if err != nil {
-		fmt.Println("解析JSON失败:", err)
-		return
+		return fmt.Errorf("解析JSON失败:%w", err)
+
 	} //也就是上步有错的时候，就会有错误爆出
 	fmt.Println("API 状态码:", resp.StatusCode)
 	fmt.Println("Message:", result.Message)
@@ -64,4 +62,5 @@ func skills(uuid string) {
 			v.ID, v.SKILL_NAME, v.VERSION, v.SIZE_BYTES, v.EXTRACT_FILE_BYTES, v.FILE_NAME, v.CREATED_AT, v.FOUNDER_NAME)
 	}
 	defer resp.Body.Close()
+	return nil
 }
