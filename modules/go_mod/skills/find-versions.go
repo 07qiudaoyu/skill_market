@@ -22,7 +22,7 @@ type APIReponse struct {
 	Message  string    `json:"message"`
 	Versions []Version `json:"versions"`
 } //这个就是我们要的数据
-func Find(ak []string) error {
+func FindVersions(ak []string) error {
 
 	if len(ak) != 3 {
 		return fmt.Errorf("格式错误:<command> <uuid>")

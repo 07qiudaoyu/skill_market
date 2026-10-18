@@ -24,12 +24,17 @@ func main() {
 		}
 	}
 	//-----------------------------------------------------------------------
-	if ak[1] == "find" {
-		if err := skills.Find(ak); err != nil {
+	if ak[1] == "find-versions" {
+		if err := skills.FindVersions(ak); err != nil {
 			fmt.Println("skill查找错误:", err)
 			return
 		}
 	}
 	//---------------------------------------------------------------
-
+	if ak[1] == "download-file" {
+		if err := skills.DownloadZip(ak); err != nil {
+			fmt.Println("skill查找错误:", err)
+			return
+		}
+	}
 }
