@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_response,Sc_Skill_Categories
+from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_response,Sc_Updata_Download_request,Sc_Updata_Download_response
 from .service import SkillsService
 from .dependencies import get_skill_service
 from fastapi import File, Form, UploadFile
@@ -118,4 +118,15 @@ def Ro_All_Categries(service:SkillsService=Depends(get_skill_service)):
     result=service.Se_All_categories()
     return result
 
-
+#=============================================
+@router.post(
+    "/Updata_Download",
+    response_model=Sc_Updata_Download_response,
+    status_code=status.HTTP_200_OK
+)
+def Return_userid(
+    item:Sc_Updata_Download_request,
+    payload:dict =Depends(header_token),
+    service:SkillsService=Depends(get_skill_service)
+):
+    return service.SE_Updata_Download(skill_versions_id=item.skill_versions_id,payload=payload)

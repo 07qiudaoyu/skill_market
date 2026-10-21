@@ -81,7 +81,7 @@ class SkillsService:
                     if not chunk:
                         break
                     yield chunk
-        self.repository.Re_Download_zip(user_id,skill_versions_id)
+        
         return StreamingResponse(
             file_download(file_path),
             media_type="application/zip",
@@ -89,6 +89,24 @@ class SkillsService:
                "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}"'
             }
         )
+    #==========================================================
+    def SE_Updata_Download(self,skill_versions_id:int,payload:dict):
+         if payload is None:
+            raise HTTPException(
+                status_code=401,
+                detail="token错误!数据库更新错误"#触发的可能好像只有过期了，那我这里能不能改写为直接拿到一个user_id
+                             )
+         user_id=payload["id"]
+         if self.repository.Re_Uerts_download(user_id,skill_versions_id)==True:
+              self.repository.Re_Updata_Download(skill_versions_id=skill_versions_id)
+              return {
+                "message":"用户首次下载成功"
+              }
+         return{
+              "message":"用户非第一次下载，不更新数据库"
+         }
+         
+         
     #==========================================================
     async def SE_Upload_Zip(self,
                     upload_zip: UploadFile,

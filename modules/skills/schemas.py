@@ -78,6 +78,10 @@ class Sc_Upload_Zip_response(BaseModel):
     message: str
     file_name: str
     storage_key: str
+class Sc_Updata_Download_request(BaseModel):
+    skill_versions_id:int
+class Sc_Updata_Download_response(BaseModel):
+    message:str
 
   
 

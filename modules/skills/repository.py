@@ -118,17 +118,36 @@ select storage_key from skill_versions where id=%s
            finally:
                   cursor.close()
 #=================================================================
-    def Re_Download_zip(self,user_id:int,skill_versions_id:int):
+    def Re_Uerts_download(self,user_id:int,skill_versions_id:int):
            cursor=self.conn.cursor()
+           count=0
            try:
-                  sql="""
-insert into users_download(user_id,version_id)
-values(%s,%s)
-"""
-                  cursor.execute(sql,(user_id,skill_versions_id,))
-                  self.conn.commit()
-           finally:
-                  cursor.close()
+                 
+                 sql="""
+                 insert into users_download(user_id,version_id)
+                 values(%s,%s)
+                 """
+                 cursor.execute(sql,(user_id,skill_versions_id,))
+                 self.conn.commit()
+           except:
+                 count=1#更新没成功
+            
+           sql1="""    
+                select * from users_download where user_id=%s and version_id =%s
+                    """
+           cursor.execute(sql1,(user_id,skill_versions_id,))
+           result1=cursor.fetchone()                        
+           if count==1:
+                 cursor.close()
+                 return False#下载过了
+           cursor.close()
+           return True#第一次下载
+           
+             
+           
+           
+               
+               
 #=========================================================================
     async def Re_Upload_Zip(self,
                       upload_zip:UploadFile,
@@ -255,5 +274,33 @@ select id,name,slug from categories
               cursor.execute(sql)
               result=cursor.fetchall()
               return result#name给前端，slug给后端
+          finally:
+                cursor.close()
+#===================================================================
+    def Re_Updata_Download(self,skill_versions_id:int):
+          cursor=self.conn.cursor()
+          #先找到版本号对应的skill的id
+          try:
+           sql1="""
+select skill_id from skill_versions where id=%s
+"""
+           cursor.execute(sql1,(skill_versions_id,))
+           result1=cursor.fetchone()
+           try:
+                 sql2="""
+update skills set download_count = download_count + 1 where id=%s
+"""
+                 cursor.execute(sql2,(result1["skill_id"],))
+                 self.conn.commit()
+           except :
+                 raise HTTPException(
+                       status_code=500,
+                       detail="数据库添加异常"
+                 )
+          except:
+                raise HTTPException(
+                      status_code=500,
+                      detail="数据库查找异常"
+                )
           finally:
                 cursor.close()
