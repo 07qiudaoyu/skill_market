@@ -97,8 +97,8 @@ class SkillsService:
                 detail="token错误!数据库更新错误"#触发的可能好像只有过期了，那我这里能不能改写为直接拿到一个user_id
                              )
          user_id=payload["id"]
-         if self.repository.Re_Uerts_download(user_id,skill_versions_id)==True:
-              self.repository.Re_Updata_Download(skill_versions_id=skill_versions_id)
+         if self.repository.Re_Uerts_download(user_id,skill_versions_id):
+              
               return {
                 "message":"用户首次下载成功"
               }
