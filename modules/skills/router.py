@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_response,Sc_Updata_Download_request,Sc_Updata_Download_response
+from .schemas import SkillSearchResponse,Find_ZIP_Response,Sc_Upload_Zip_response
 from .service import SkillsService
 from .dependencies import get_skill_service
 from fastapi import File, Form, UploadFile
@@ -44,17 +44,6 @@ def FIND_SKILL_VERSIONS(
 ):
     return service.find_skill_versions(
         public_id=public_id
-    )
-@router.get(
-    "/request_file",
-    status_code=status.HTTP_200_OK
-)
-def REQUEST_FILE(
-    skill_versions_id:int,
-    service:SkillsService=Depends(get_skill_service)
-):
-    return service.Se_Find_Zip(
-        skill_versions_id=skill_versions_id
     )
 #--------------------------------------------
 @router.get(
@@ -117,16 +106,14 @@ def Ro_All_Tags(service:SkillsService=Depends(get_skill_service)):
 def Ro_All_Categries(service:SkillsService=Depends(get_skill_service)):
     result=service.Se_All_categories()
     return result
-
-#=============================================
+#===============================================
 @router.post(
-    "/Updata_Download",
-    response_model=Sc_Updata_Download_response,
+    "/GitHub_post",
     status_code=status.HTTP_200_OK
 )
-def Return_userid(
-    item:Sc_Updata_Download_request,
+def Re_GitHub_post(
+    url1:str,
     payload:dict =Depends(header_token),
-    service:SkillsService=Depends(get_skill_service)
+    service:SkillsService=Depends(get_skill_service) 
 ):
-    return service.SE_Updata_Download(skill_versions_id=item.skill_versions_id,payload=payload)
+    return service.SE_GitHub_post(url1=url1,payload=payload)

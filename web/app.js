@@ -5,7 +5,8 @@
    - 分类/标签：从 All_categories / All_Tags 拉取，
      界面显示中文 name，提交给后端的是 slug
    - 上传：审核机制（表单值需与 zip 内 skill.json 一致）
-   - 下载：Download_file 需登录 token，游客引导登录
+   - 鉴权：上传/下载统一用请求头 Authorization: Bearer <token>；
+     不调用 /auth/user_data，登录态由 localStorage + JWT exp 本地判定
    ============================================================ */
 (function () {
   'use strict';
@@ -126,7 +127,8 @@
     sort: 'newest',
     source: 'seed',    // 'seed' | 'live'
     liveLocked: false,
-    openDrawers: {}
+    openDrawers: {},
+    pendingAction: null // 游客触发鉴权操作时暂存，登录成功后自动续做
   };
 
   /* 枚举：显示用 name，提交用 slug */
@@ -191,6 +193,28 @@
 
   function getToken() { return localStorage.getItem(LS_TOKEN) || ''; }
   function getName() { return localStorage.getItem(LS_NAME) || ''; }
+
+  /* 鉴权请求头：后端 header_token 基于 HTTPBearer，读 Authorization: Bearer <token> */
+  function authHeaders() {
+    var token = getToken();
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
+  /* 后端没有暴露用户信息接口，登录态只靠 JWT 自带的 exp 在本地判断 */
+  function isTokenExpired(token) {
+    try {
+      var part = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var payload = JSON.parse(decodeURIComponent(escape(atob(part))));
+      return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function clearSession() {
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_NAME);
+  }
 
   /* ---------- 枚举加载（All_categories / All_Tags，失败降级） ---------- */
   function fetchJson(url) {
@@ -503,24 +527,24 @@
     if (state.openDrawers[pid] && skill) fillDrawer(skill);
   }
 
-  /* ---------- 下载（Download_file 需登录 token） ---------- */
-  function requireLogin(message) {
+  /* ---------- 下载（Download_file 走 Authorization 请求头） ---------- */
+  function requireLogin(message, retry) {
+    state.pendingAction = typeof retry === 'function' ? retry : null;
     toast(escapeHtml(message));
     switchAuthTab('login');
     openModal('auth-modal');
   }
 
   function downloadZip(id, fileName) {
-    var token = getToken();
-    if (!token) {
-      requireLogin('登录后才能下载技能。');
+    if (!getToken()) {
+      requireLogin('登录后才能下载技能。', function () { downloadZip(id, fileName); });
       return;
     }
-    var url = API.download + '?id=' + encodeURIComponent(id) +
-      '&token=' + encodeURIComponent(token);
-    fetch(url)
+    var url = API.download + '?id=' + encodeURIComponent(id);
+    fetch(url, { headers: authHeaders() })
       .then(function (res) {
-        if (res.status === 401) throw new Error('auth');
+        // 未带 header 时 HTTPBearer 直接 403，token 无效时 header_token 返回 401
+        if (res.status === 401 || res.status === 403) throw new Error('auth');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.blob();
       })
@@ -614,7 +638,11 @@
   }
 
   function openModal(id) { $(id).hidden = false; }
-  function closeModal(id) { $(id).hidden = true; }
+  function closeModal(id) {
+    $(id).hidden = true;
+    // 关掉登录弹窗即放弃这次待续动作，避免之后被动触发
+    if (id === 'auth-modal') state.pendingAction = null;
+  }
 
   function switchAuthTab(which) {
     var isLogin = which === 'login';
@@ -650,10 +678,17 @@
         if (!r.ok) throw new Error(apiError(r.data, '登录失败，请检查邮箱和密码。'));
         localStorage.setItem(LS_TOKEN, r.data.token || '');
         localStorage.setItem(LS_NAME, r.data.name || '');
+        var pending = state.pendingAction;
+        state.pendingAction = null;
         renderAuthArea();
         closeModal('auth-modal');
         $('login-password').value = '';
-        toast('登录成功。上传与下载会自动携带 token。');
+        if (pending) {
+          toast('登录成功。');
+          pending();
+          return;
+        }
+        toast('登录成功。上传与下载会通过请求头自动携带 token。');
       })
       .catch(function (err) {
         showError('login-error', err.message || '登录失败，后端未响应。');
@@ -742,7 +777,10 @@
   }
 
   function openUpload() {
-    $('up-token').value = getToken();
+    if (!getToken()) {
+      requireLogin('登录后才能上传技能。', openUpload);
+      return;
+    }
     $('upload-error').hidden = true;
     renderUploadEnums();
     toggleTagsPanel(false);
@@ -753,6 +791,13 @@
   function handleUpload(e) {
     e.preventDefault();
     $('upload-error').hidden = true;
+
+    if (!getToken() || isTokenExpired(getToken())) {
+      clearSession();
+      renderAuthArea();
+      requireLogin('登录状态已失效，请重新登录后上传。', openUpload);
+      return;
+    }
 
     var tagSlugs = selectedTagSlugs();
     if (!tagSlugs.length) {
@@ -769,20 +814,28 @@
     tagSlugs.forEach(function (s) { fd.append('tags', s); }); // list[str]：重复字段
     fd.append('summary', $('up-summary').value.trim());
     fd.append('readme_html', $('up-readme').value);
-    fd.append('token', $('up-token').value.trim());
     fd.append('upload_zip', $('up-zip').files[0]);
 
     var submitBtn = $('upload-submit');
     submitBtn.disabled = true;
     submitBtn.textContent = '上传中…';
 
-    fetch(API.upload, { method: 'POST', body: fd })
-      .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+    fetch(API.upload, { method: 'POST', headers: authHeaders(), body: fd })
+      .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d, status: res.status }; }); })
       .then(function (r) {
-        if (!r.ok) throw new Error(apiError(r.data, '上传失败。'));
+        if (!r.ok) {
+          // 401/403 说明 header 里的 token 失效，清掉本地登录态并引导重新登录
+          if (r.status === 401 || r.status === 403) {
+            clearSession();
+            renderAuthArea();
+            closeModal('upload-modal');
+            requireLogin('登录已过期或 token 无效，请重新登录后上传。', openUpload);
+            return;
+          }
+          throw new Error(apiError(r.data, '上传失败。'));
+        }
         closeModal('upload-modal');
         form.reset();
-        $('up-token').value = getToken();
         syncTagsToggle();
         toast('上传成功，审核通过：<code>' + escapeHtml(r.data.file_name || '') + '</code>');
         versionsCache = {};
@@ -875,8 +928,8 @@
         return;
       }
       if (e.target.closest('#logout-btn')) {
-        localStorage.removeItem(LS_TOKEN);
-        localStorage.removeItem(LS_NAME);
+        clearSession();
+        state.pendingAction = null;
         renderAuthArea();
         toast('已退出登录。');
         return;
@@ -906,6 +959,8 @@
 
   /* ---------- 启动 ---------- */
   function init() {
+    // 没有用户信息接口可校验，本地先按 JWT exp 清理过期登录态
+    if (getToken() && isTokenExpired(getToken())) clearSession();
     renderAuthArea();
     playMdCard();
     bindEvents();

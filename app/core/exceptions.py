@@ -62,4 +62,26 @@ class Ex_upload_file:
                   status_code=404,
                   detail="数据库添加失败"
               )
-       
+class Ex_GitHUb_main:
+   def Ex_GitHub_status_code(code:int):
+       if code==404:
+                     raise HTTPException(
+                          status_code=404,
+                          detail="地址错误，没找到"
+                     )
+       if code==403:
+                     raise HTTPException(
+                          status_code=403,
+                          detail="请求过多，已被限流"
+                     )
+       if code!=200:
+                     raise HTTPException(
+                          status_code=500,
+                          detail="请求失败"
+                     )
+   def EX_GitHub_main_error_1():
+       raise HTTPException(
+           status_code=400,
+           detail="文件目录中skill.json,SKILL.md,README.md,有缺失"
+       )
+   

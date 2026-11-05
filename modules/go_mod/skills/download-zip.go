@@ -2,8 +2,6 @@
 package skills
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"go_mod/security"
 	"io"
@@ -12,10 +10,6 @@ import (
 	"os"
 	"strconv" //用于强制转换的，将string变为int
 )
-
-type updata_download_request struct {
-	ID int `json:"skill_versions_id"`
-}
 
 func DownloadZip(ak []string) error {
 	if len(ak) != 3 {
@@ -26,16 +20,9 @@ func DownloadZip(ak []string) error {
 	if err != nil {
 		return fmt.Errorf("输入命令转换错误:%w", err)
 	}
-	Input := updata_download_request{
-		ID: id,
-	}
-	JsonData, err := json.Marshal(Input)
-	if err != nil {
-		return fmt.Errorf("go数据转换json错误:%w", err)
 
-	}
 	//===========================================
-	url := "http://127.0.0.1:8000/api/v1/skills/Download_file?id=" + ak[2]
+	url := "http://127.0.0.1:8000/api/v1/skills/Download_file?id=" + strconv.Itoa(id)
 	res, err := http.NewRequest(
 		http.MethodGet,
 		url,
@@ -96,42 +83,7 @@ func DownloadZip(ak []string) error {
 
 	success = true
 	//====================================================
-	url2 := "http://127.0.0.1:8000/api/v1/skills/Updata_Download"
 
-	res1, err := http.NewRequest(
-		http.MethodPost,
-		url2,
-		bytes.NewBuffer(JsonData),
-	)
-	if err != nil {
-		return fmt.Errorf("更新数据库URL请求失败:%w", err)
-	}
-	err = security.JwtHeader(res1) //加入jwt进我们的header里面
-
-	if err != nil {
-		return fmt.Errorf("jwt加入失败，请重新登入:%w", err)
-	}
-	res1.Header.Set("Content-Type", "application/json")
-
-	resp1, err := client.Do(res1)
-	if err != nil {
-		return fmt.Errorf("zip下载成功,但更新下载数据库请求失败:%w", err)
-	}
-	defer resp1.Body.Close()
-	body, err := io.ReadAll(resp1.Body) //看顾客的回复，也就是api回复
-	if err != nil {
-		return fmt.Errorf("zip下载成功,但数据库回应失败:%w", err)
-
-	}
-	fmt.Println("状态码:", resp1.StatusCode)
-	fmt.Println("响应内容:", string(body))
-
-	if resp1.StatusCode != 200 {
-		fmt.Println("响应内容:", string(body))
-
-		return fmt.Errorf("下载zip成功，但数据库更新失败")
-
-	}
 	fmt.Printf("下载成功: %s (%d 字节)\n", filename, n)
 	return nil
 

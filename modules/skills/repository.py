@@ -125,7 +125,8 @@ select storage_key from skill_versions where id=%s
                  insert ignore into users_download(user_id,version_id)
                  values(%s,%s)
                  """
-                 ak=cursor.execute(sql,(user_id,skill_versions_id,))
+                 cursor.execute(sql,(user_id,skill_versions_id,))
+                 ak=cursor.rowcount
                 
                  if ak:
                        sql1="""
@@ -280,4 +281,4 @@ select id,name,slug from categories
           finally:
                 cursor.close()
 #===================================================================
-    
+   

@@ -1,12 +1,16 @@
 from .repository import SkillsRepository
 from fastapi import HTTPException
 import os
-from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
 from app.core.security import check_token
 from pathlib import Path
 from fastapi import UploadFile
 from app.core.security import check_token
+import requests
+import json
+from GitHub_validator import check_GitHub_file
+import re
+
 class SkillsService:
     def __init__(self, repository: SkillsRepository):
         self.repository = repository
@@ -35,29 +39,6 @@ class SkillsService:
 "message":"该技能所有版本及发表用户",
 "versions":result
         }
-    def Se_Find_Zip(self,skill_versions_id:int):
-        result=self.repository.Re_Find_Zip(
-            skill_versions_id=skill_versions_id
-        )
-        if not result:
-            raise HTTPException(
-                status_code=404,
-                detail="未找到skill_versions_id对应信息,错误"
-            )
-        STORAGE_ROOT="data"
-        file_path=os.path.join(
-            STORAGE_ROOT,
-            result["storage_key"]
-        )
-        if not os.path.isfile(file_path):
-            raise HTTPException(
-                status_code=404,
-                detail="未找到skill_versions_id对应的文件地址,错误"
-            )
-        return FileResponse(
-            file_path,
-            filename=os.path.basename(file_path)
-        )
     #----------------------------------------------------
     def Se_Download_Zip(self,skill_versions_id:int,payload:dict):#本地的
         
@@ -81,6 +62,16 @@ class SkillsService:
                     if not chunk:
                         break
                     yield chunk
+                    #文件写完了，我们就直接进行更新
+            try:
+                 ak=self.repository.Re_Uerts_download(user_id,skill_versions_id)#
+                 if ak==1:
+                      print("第一次下载")
+                 else:
+                      print("非第一次下载")
+            except Exception as e:
+                 print("下载成功，数据库更新失败:",e)
+                     
         
         return StreamingResponse(
             file_download(file_path),
@@ -89,24 +80,6 @@ class SkillsService:
                "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}"'
             }
         )
-    #==========================================================
-    def SE_Updata_Download(self,skill_versions_id:int,payload:dict):
-         if payload is None:
-            raise HTTPException(
-                status_code=401,
-                detail="token错误!数据库更新错误"#触发的可能好像只有过期了，那我这里能不能改写为直接拿到一个user_id
-                             )
-         user_id=payload["id"]
-         if self.repository.Re_Uerts_download(user_id,skill_versions_id):
-              
-              return {
-                "message":"用户首次下载成功"
-              }
-         return{
-              "message":"用户非第一次下载，不更新数据库"
-         }
-         
-         
     #==========================================================
     async def SE_Upload_Zip(self,
                     upload_zip: UploadFile,
@@ -171,4 +144,34 @@ class SkillsService:
     def Se_All_categories(self):
          return self.repository.Re_All_categories()
     
-               
+    #=========================================GitHub的sdk
+    def SE_GitHub_post(self,url1:str,payload:dict):
+         #1.先审核jwt:
+         if payload is None:
+            raise HTTPException(
+            status_code=401,
+            detail="token错误!游客现不支持下载skill,请登入"
+                             )
+         
+         #白名单https://github.com/{owner}/{repo}
+         def url_extract(url1):
+              result="github\.com/([^/]+)/([^/]+)"
+              result1=re.search(result,url1)
+              if not result1:
+                   raise HTTPException(
+                        status_code=401,
+                        detail="用户上传url不符合要求https://github.com/{owner}/{repo}"
+                   )
+              owner=result1.group(1)
+              repo=result1.group(2).removesuffix(".git")#取除末尾的后缀
+              url=f"api.https://github.com/{owner}/{repo}"
+              return url
+         url=url_extract(url1)
+         #2.带有文件要求和文件数量要求
+         r=requests.get(url,timeout=10)
+         code=r.status_code
+         check_GitHub_file.Ex_GitHUb_main.Ex_GitHub_status_code(code)#请求
+         text=r.text
+         data=json.loads(text)
+         check_GitHub_file.Va_check_main(data=data)#文件含有和文件长度
+         

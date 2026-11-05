@@ -1,8 +1,31 @@
-import asyncio
-from starlette.datastructures import UploadFile
-from validator.check_file_zip import Check_file_zip
+import re
+import requests
+import json
+url = "https://github.com/07qiudaoyu/skill_market"
 
-f = open("data/skills/uuid-001/1.0.0/auto-email-sender_v1.0.0.zip", "rb")
-uf = UploadFile(filename="a.zip", file=f)
+pattern = r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?"
 
-print(asyncio.run(Check_file_zip(uf)))
+result = re.fullmatch(pattern, url)
+
+if not result:
+    raise ValueError("GitHub URL 格式不正确")
+
+owner = result.group(1)
+repo = result.group(2)
+
+api_url = f"https://api.github.com/repos/{owner}/{repo}"
+
+r = requests.get(api_url, timeout=10)
+
+if r.status_code == 404:
+    raise ValueError("GitHub 仓库不存在或无法访问")
+
+r.raise_for_status()
+
+data = r.json()
+
+print(data["full_name"])
+print(data["html_url"])
+print(data["private"])
+
+print(data)

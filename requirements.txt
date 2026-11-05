@@ -7,4 +7,7 @@ email-validator
 python-dotenv
 python-multipart
 PyYAML
+requests
+jsona
+re
 
