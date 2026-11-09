@@ -9,7 +9,13 @@ from app.core.security import check_token
 import requests
 import json
 from GitHub_validator import check_GitHub_file
+from validator import check_file_zip
 import re
+import markdown
+import zipfile
+import io
+from starlette.datastructures import UploadFile as StarletteUploadFile
+
 
 class SkillsService:
     def __init__(self, repository: SkillsRepository):
@@ -145,18 +151,19 @@ class SkillsService:
          return self.repository.Re_All_categories()
     
     #=========================================GitHub的sdk
-    def SE_GitHub_post(self,url1:str,payload:dict):
+    async def SE_GitHub_post(self,url1:str,payload:dict
+                       ):
          #1.先审核jwt:
          if payload is None:
             raise HTTPException(
             status_code=401,
-            detail="token错误!游客现不支持下载skill,请登入"
-                             )
+           detail="token错误!游客现不支持下载skill,请登入"
+                   )
          
          #白名单https://github.com/{owner}/{repo}
          def url_extract(url1):
-              result="github\.com/([^/]+)/([^/]+)"
-              result1=re.search(result,url1)
+              result=r"https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?"
+              result1 = re.fullmatch(result, url1)
               if not result1:
                    raise HTTPException(
                         status_code=401,
@@ -164,14 +171,88 @@ class SkillsService:
                    )
               owner=result1.group(1)
               repo=result1.group(2).removesuffix(".git")#取除末尾的后缀
-              url=f"api.https://github.com/{owner}/{repo}"
-              return url
-         url=url_extract(url1)
-         #2.带有文件要求和文件数量要求
-         r=requests.get(url,timeout=10)
-         code=r.status_code
-         check_GitHub_file.Ex_GitHUb_main.Ex_GitHub_status_code(code)#请求
-         text=r.text
-         data=json.loads(text)
-         check_GitHub_file.Va_check_main(data=data)#文件含有和文件长度
+              main_url=f"https://api.github.com/repos/{owner}/{repo}/zipball"
+              return {"main_url":main_url,
+                      "owner":owner,
+                      "repo":repo}
+         url_datas=url_extract(url1)
+         main_url=url_datas["main_url"]
+         owner=url_datas["owner"]
+         repo=url_datas["repo"]
+
+         #2.带有文件要求和文件数量要
+         GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+         headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
+         r=requests.get(main_url,headers=headers,timeout=30)
+         check_GitHub_file.Ex_GitHUb_main.Ex_GitHub_status_code(r.status_code)#请求
+
+         #-------------- 去目录               --------------------
+         raw = zipfile.ZipFile(io.BytesIO(r.content))#将zip打开，放在临时内存
+         prefix = raw.namelist()[0].split("/")[0] + "/"
+         buf = io.BytesIO()
+         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as out:
+              for item in raw.infolist():
+                   entry = item.filename[len(prefix):]
+                   if not entry or entry.endswith("/"):
+                        continue
+                   out.writestr(entry, raw.read(item))
+         zip_bytes = buf.getvalue()
+         #审核：根目录三件套必须在
+         check_up=StarletteUploadFile(filename="check.zip",file=io.BytesIO(zip_bytes))
+         await check_file_zip.Check_file_zip(check_up)
+         #从skill.json拿元数据
+         src=zipfile.ZipFile(io.BytesIO(zip_bytes))
+         data=json.loads(src.read("skill.json"))
+         result1=payload
+         if result1 is None:
+                             raise HTTPException(
+                                 status_code=401,
+                                 detail="token错误!"
+                             )
+         user_id=result1["id"]
+         slug=data["name"]
+         version =data["version"]
+         category= data["category"]
+         tags= data["tags"]
+         summary=data["description"]
+         readme_html=markdown.markdown(src.read("README.md").decode("utf-8"))
+
+         upload=StarletteUploadFile(
+              filename=f"{slug}.zip",
+              file=io.BytesIO(zip_bytes)
+         )
+         name=data.get("displayName") or slug
+         result=await self.repository.Re_Upload_Zip(upload_zip=upload,
+                                                      name=name,
+                                                      version=version,
+                                                      owner_id=user_id,
+                                                      category=category,
+                                                      readme_html=readme_html,
+                                                      summary=summary,
+                                                      slug=slug,
+                                                      tags=tags
+                                                      )
+         #3.把zip落到磁盘，下载接口才有东西可读
+         file_path=Path("data") / result["storage_key"]
+         file_path.parent.mkdir(parents=True, exist_ok=True)
+         file_path.write_bytes(result["file_content"])
+
+
+
+
+
+                  
+         
+
+         
+
+
+
+
+
+         ak=r.headers.get("x-ratelimit-remaining")
+         return {
+              "message":"ok",
+              "limit":ak 
+         }
          

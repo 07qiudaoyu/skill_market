@@ -12,7 +12,19 @@ async def Check_file_zip(upload_zip:UploadFile):
     await upload_zip.seek(0)
     #2.检查文件是否有skill.md,skill.json,readme.md
     zip_file=ZipFile(BytesIO(file_content))#解压
-    file_names=[os.path.basename(n) for n in zip_file.namelist()]
+
+    
+    
+    
+    
+    #file_names=[os.path.basename(n) for n in zip_file.namelist()]这个不能检测是否在根目录上
+
+    file_names = {n.removeprefix("./") for n in zip_file.namelist()}
+#这个可以
+
+
+
+
     print("DEBUG file_names =", file_names) 
     if "skill.json" not in file_names:
         Ex_upload_file.Ex_lack_json()

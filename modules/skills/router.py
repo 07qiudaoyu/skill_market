@@ -111,9 +111,9 @@ def Ro_All_Categries(service:SkillsService=Depends(get_skill_service)):
     "/GitHub_post",
     status_code=status.HTTP_200_OK
 )
-def Re_GitHub_post(
+async def Re_GitHub_post(
     url1:str,
-    payload:dict =Depends(header_token),
+    payload:dict=Depends(header_token),
     service:SkillsService=Depends(get_skill_service) 
 ):
-    return service.SE_GitHub_post(url1=url1,payload=payload)
+    return await service.SE_GitHub_post(url1=url1,payload=payload)

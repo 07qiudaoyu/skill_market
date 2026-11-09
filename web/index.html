@@ -210,6 +210,14 @@
       <button class="modal-close" type="button" data-close-upload aria-label="关闭">×</button>
       <h2 class="modal-title" id="upload-title">上传技能</h2>
 
+      <!-- 两种发布方式：本地 zip / GitHub 仓库导入 -->
+      <div class="mode-tabs" role="tablist" aria-label="发布方式">
+        <button class="mode-tab is-active" id="mode-tab-zip" type="button" role="tab"
+                aria-selected="true" aria-controls="upload-form">上传 zip</button>
+        <button class="mode-tab" id="mode-tab-gh" type="button" role="tab"
+                aria-selected="false" aria-controls="github-form">从 GitHub 导入</button>
+      </div>
+
       <form class="upload-form" id="upload-form">
         <p class="form-error" id="upload-error" hidden></p>
 
@@ -297,6 +305,54 @@
         </div>
 
         <button class="btn btn-primary btn-block" type="submit" id="upload-submit">上传</button>
+      </form>
+
+      <!-- ---------- GitHub 导入（后端拉取仓库 zipball 后走同一套审核） ---------- -->
+      <form class="upload-form" id="github-form" hidden>
+        <p class="form-error" id="gh-error" hidden></p>
+
+        <div class="spec-box">
+          <button type="button" class="spec-toggle" id="gh-spec-toggle" aria-expanded="false">
+            GitHub 导入要求 · 不满足会被后端拒绝
+            <span class="spec-arrow" aria-hidden="true">▾</span>
+          </button>
+          <div class="spec-body" id="gh-spec-body" hidden>
+            <ol class="spec-list">
+              <li><strong>仓库地址</strong>只接受 <code>https://github.com/{owner}/{repo}</code>：不能带分支、子目录或查询参数，仓库需公开。</li>
+              <li><strong>根目录三文件</strong>：skill.json、SKILL.md、README.md 必须在仓库根目录，子文件夹里的不算。</li>
+              <li><strong>元数据全取自 skill.json</strong>：name 作为 slug，version、category、tags、description 原样入库；category 与 tags 必须用下方对照表的 slug。</li>
+              <li><strong>README.md</strong> 会转成 HTML 作为详情内容；SKILL.md 的 frontmatter 规则与 zip 上传一致（name/description 要和 skill.json 对上，UTF-8）。</li>
+              <li><strong>打包的是默认分支最新提交</strong>；GitHub 限流时会返回 403，稍后再试。</li>
+            </ol>
+
+            <div class="spec-tables">
+              <div class="spec-table">
+                <h4>分类对照表 <span>skill.json 的 category 填 slug</span></h4>
+                <table>
+                  <thead><tr><th>名称</th><th>slug</th></tr></thead>
+                  <tbody id="gh-spec-categories-tbody"></tbody>
+                </table>
+              </div>
+              <div class="spec-table">
+                <h4>标签对照表 <span>skill.json 的 tags 填 slug</span></h4>
+                <table>
+                  <thead><tr><th>名称</th><th>slug</th></tr></thead>
+                  <tbody id="gh-spec-tags-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="gh-url">仓库地址 *</label>
+          <input type="url" id="gh-url" name="url1" required autocomplete="off" spellcheck="false"
+                 placeholder="https://github.com/owner/repo">
+          <p class="form-hint">可带 <code>.git</code> 后缀，提交前会自动去掉。</p>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="gh-submit">导入</button>
+        <p class="form-hint">成功后立即出现在技能列表里；同一个仓库再次导入会按版本走。</p>
       </form>
     </div>
   </div>

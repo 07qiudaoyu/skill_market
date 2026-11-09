@@ -18,6 +18,7 @@
     login:          '/api/v1/auth/login',
     register:       '/api/v1/auth/register',
     upload:         '/api/v1/skills/upload_zip',
+    github:         '/api/v1/skills/GitHub_post',
     allTags:        '/api/v1/skills/All_Tags',
     allCategories:  '/api/v1/skills/All_categories'
   };
@@ -128,7 +129,8 @@
     source: 'seed',    // 'seed' | 'live'
     liveLocked: false,
     openDrawers: {},
-    pendingAction: null // 游客触发鉴权操作时暂存，登录成功后自动续做
+    pendingAction: null, // 游客触发鉴权操作时暂存，登录成功后自动续做
+    uploadMode: 'zip'    // 'zip' 本地压缩包 | 'gh' GitHub 仓库导入
   };
 
   /* 枚举：显示用 name，提交用 slug */
@@ -180,6 +182,15 @@
       return data.detail.map(function (d) { return d.msg || ''; }).join('；');
     }
     return fallback;
+  }
+
+  /* 未捕获异常时 FastAPI 返回的是纯文本 "Internal Server Error"，不能直接 res.json() */
+  function readApiResponse(res) {
+    return res.text().then(function (text) {
+      var data = null;
+      try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+      return { ok: res.ok, status: res.status, data: data };
+    });
   }
 
   var toastTimer = null;
@@ -736,21 +747,29 @@
         '</label>';
     }).join('');
 
-    // slug↔name 对照表（为上传者打包 skill.json 服务）
-    $('spec-categories-tbody').innerHTML = enums.categories.map(function (c) {
+    // slug↔name 对照表（为上传者打包 skill.json 服务；zip 与 GitHub 两个表单共用）
+    var catRows = enums.categories.map(function (c) {
       return '<tr><td>' + escapeHtml(c.name) + '</td><td><code>' + escapeHtml(c.slug) + '</code></td></tr>';
     }).join('');
-    $('spec-tags-tbody').innerHTML = enums.tags.map(function (t) {
+    var tagRows = enums.tags.map(function (t) {
       return '<tr><td>' + escapeHtml(t.name) + '</td><td><code>' + escapeHtml(t.slug) + '</code></td></tr>';
     }).join('');
+    ['spec-categories-tbody', 'gh-spec-categories-tbody'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.innerHTML = catRows;
+    });
+    ['spec-tags-tbody', 'gh-spec-tags-tbody'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.innerHTML = tagRows;
+    });
     syncTagsToggle();
   }
 
-  function toggleSpec(open) {
-    var body = $('spec-body');
-    var willOpen = open != null ? open : body.hidden;
+  function toggleSpecBox(toggleId, bodyId) {
+    var body = $(bodyId);
+    var willOpen = body.hidden;
     body.hidden = !willOpen;
-    $('spec-toggle').setAttribute('aria-expanded', String(willOpen));
+    $(toggleId).setAttribute('aria-expanded', String(willOpen));
   }
 
   function selectedTagSlugs() {
@@ -776,15 +795,29 @@
     $('up-tags-toggle').setAttribute('aria-expanded', String(willOpen));
   }
 
+  /* ---------- 发布方式：上传 zip / 从 GitHub 导入 ---------- */
+  function switchUploadMode(mode) {
+    var isGh = mode === 'gh';
+    state.uploadMode = isGh ? 'gh' : 'zip';
+    $('upload-form').hidden = isGh;
+    $('github-form').hidden = !isGh;
+    $('mode-tab-zip').classList.toggle('is-active', !isGh);
+    $('mode-tab-gh').classList.toggle('is-active', isGh);
+    $('mode-tab-zip').setAttribute('aria-selected', String(!isGh));
+    $('mode-tab-gh').setAttribute('aria-selected', String(isGh));
+    $('upload-title').textContent = isGh ? '从 GitHub 导入' : '上传技能';
+    $('upload-error').hidden = true;
+    $('gh-error').hidden = true;
+    toggleTagsPanel(false);
+  }
+
   function openUpload() {
     if (!getToken()) {
-      requireLogin('登录后才能上传技能。', openUpload);
+      requireLogin('登录后才能发布技能。', openUpload);
       return;
     }
-    $('upload-error').hidden = true;
     renderUploadEnums();
-    toggleTagsPanel(false);
-    toggleSpec(false);
+    switchUploadMode(state.uploadMode);
     openModal('upload-modal');
   }
 
@@ -851,6 +884,78 @@
       });
   }
 
+  /* ---------- 从 GitHub 导入（POST /skills/GitHub_post?url1=…） ---------- */
+  function normalizeGithubUrl(raw) {
+    return String(raw || '').trim()
+      .replace(/\/+$/, '')     // 末尾斜杠
+      .replace(/\.git$/i, ''); // .git 后缀
+  }
+
+  function isValidGithubUrl(url) {
+    return /^https?:\/\/github\.com\/[^/\s]+\/[^/\s]+$/.test(url);
+  }
+
+  function handleGithubImport(e) {
+    e.preventDefault();
+    $('gh-error').hidden = true;
+
+    if (!getToken() || isTokenExpired(getToken())) {
+      clearSession();
+      renderAuthArea();
+      switchUploadMode('gh');
+      requireLogin('登录状态已失效，请重新登录后导入。', openUpload);
+      return;
+    }
+
+    var url = normalizeGithubUrl($('gh-url').value);
+    if (!isValidGithubUrl(url)) {
+      showError('gh-error', '地址格式不对：只接受 https://github.com/{owner}/{repo}。');
+      return;
+    }
+
+    var submitBtn = $('gh-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '导入中… 正在拉取仓库';
+
+    fetch(API.github + '?url1=' + encodeURIComponent(url), {
+      method: 'POST',
+      headers: authHeaders()
+    })
+      .then(function (res) { return readApiResponse(res); })
+      .then(function (r) {
+        if (!r.ok) {
+          var detail = apiError(r.data, r.status === 500
+            ? '后端处理仓库时出错（HTTP 500）。常见原因：仓库根目录缺 skill.json / SKILL.md / README.md，或 skill.json 不是合法 JSON。'
+            : '导入失败（HTTP ' + r.status + '）。');
+          // 401 里只有 token 类错误才需要重新登录；地址不合规也返回 401，直接展示原因
+          if (r.status === 401 && /token/i.test(String(detail))) {
+            clearSession();
+            renderAuthArea();
+            switchUploadMode('gh');
+            requireLogin('登录已过期或 token 无效，请重新登录后导入。', openUpload);
+            return;
+          }
+          throw new Error(detail);
+        }
+        $('gh-url').value = '';
+        state.uploadMode = 'zip';
+        closeModal('upload-modal');
+        var limit = r.data && r.data.limit;
+        toast('导入成功，仓库已入库。' +
+          (limit ? ' GitHub 剩余配额 <code>' + escapeHtml(limit) + '</code>' : ''));
+        versionsCache = {};
+        state.liveLocked = false;
+        refresh();
+      })
+      .catch(function (err) {
+        showError('gh-error', err.message || '导入失败，后端未响应。');
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '导入';
+      });
+  }
+
   /* ---------- 事件 ---------- */
   function bindEvents() {
     $('search-form').addEventListener('submit', function (e) {
@@ -882,7 +987,12 @@
     $('up-tags-panel').addEventListener('change', syncTagsToggle);
 
     /* 上传规范折叠 */
-    $('spec-toggle').addEventListener('click', function () { toggleSpec(); });
+    $('spec-toggle').addEventListener('click', function () { toggleSpecBox('spec-toggle', 'spec-body'); });
+    $('gh-spec-toggle').addEventListener('click', function () { toggleSpecBox('gh-spec-toggle', 'gh-spec-body'); });
+
+    /* 发布方式切换 */
+    $('mode-tab-zip').addEventListener('click', function () { switchUploadMode('zip'); });
+    $('mode-tab-gh').addEventListener('click', function () { switchUploadMode('gh'); });
 
     document.addEventListener('click', function (e) {
       // 点击面板外关闭标签面板
@@ -947,6 +1057,7 @@
     $('login-form').addEventListener('submit', handleLogin);
     $('register-form').addEventListener('submit', handleRegister);
     $('upload-form').addEventListener('submit', handleUpload);
+    $('github-form').addEventListener('submit', handleGithubImport);
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
