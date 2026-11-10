@@ -1,3 +1,21 @@
+# skill_market
+
+技能市场：上传 zip 或直接给一个 GitHub 仓库地址，审核通过后入库，可搜索、可下载。
+
+## 演示视频
+
+完整操作（2 分 23 秒）：
+
+[![完整演示](docs/video/cover.png)](docs/video/demo.mp4)
+
+从 GitHub 导入（31 秒）：
+
+[![GitHub 导入](docs/video/cover-github.png)](docs/video/github-import.mp4)
+
+点开封面图即可播放。仓库地址只填 `https://github.com/{owner}/{repo}` 这种根地址。
+
+---
+
 通过agent的反馈：
 ```
 一、go_mod 检查
