@@ -206,15 +206,4 @@ go run . download-file <version_id>
 
 token 存在系统 keyring 里，登录一次就行。
 
-## 已知问题
-
-- 重复上传同一个 slug 同一个版本，会回 `404 数据库添加失败`，实际应该说「版本已存在」
-- `GitHub_post` 返回的 `limit` 字段是 `null`，因为 zipball 会 302 到 codeload，最终响应头里没有限流信息
-- Go CLI 的 `main.go` 没做参数保护，不带参数运行会 panic
-- 刚推送完就导入 GitHub 仓库，可能拿到 CDN 缓存的旧包
-
-## 待办
-
-- 技能详情页（现在 `readme_html` 只存不读）
-- 上传失败的具体原因细分，现在只回「有缺失」
-- CLI 补上传命令
+## 11.11进行了优化cli，采用cobra包，后期将对输出格式进行优化
