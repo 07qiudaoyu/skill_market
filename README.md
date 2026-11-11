@@ -198,12 +198,12 @@ https://github.com/{owner}/{repo}
 在 `modules/go_mod/` 下。
 
 ```bash
-go run . register <email> <name> <password>
-go run . login <email> <password>
-go run . find-versions <public_id>
-go run . download-file <version_id>
+go run main.go rg <email> <name> <password>
+go run main.go lg <email> <password>
+go run main.go fv <public_id>
+go run main.go dl <version_id>
 ```
 
 token 存在系统 keyring 里，登录一次就行。
 
-## 11.11进行了优化cli，采用cobra包，后期将对输出格式进行优化
+## 11.11进行了优化cli，采用cobra包，后期将对输出格式进行优化及keyring缓存优化，目前keyring不具备删除缓存能力
