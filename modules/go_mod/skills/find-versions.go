@@ -24,10 +24,7 @@ type APIReponse struct {
 } //这个就是我们要的数据
 func FindVersions(ak []string) error {
 
-	if len(ak) != 3 {
-		return fmt.Errorf("格式错误:<command> <uuid>")
-	}
-	uuid := ak[2]
+	uuid := ak[0]
 
 	url := "http://127.0.0.1:8000/api/v1/skills/find_versions?public_id=" + uuid
 

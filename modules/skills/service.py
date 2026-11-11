@@ -236,20 +236,6 @@ class SkillsService:
          file_path=Path("data") / result["storage_key"]
          file_path.parent.mkdir(parents=True, exist_ok=True)
          file_path.write_bytes(result["file_content"])
-
-
-
-
-
-                  
-         
-
-         
-
-
-
-
-
          ak=r.headers.get("x-ratelimit-remaining")
          return {
               "message":"ok",

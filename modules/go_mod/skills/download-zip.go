@@ -12,11 +12,9 @@ import (
 )
 
 func DownloadZip(ak []string) error {
-	if len(ak) != 3 {
-		return fmt.Errorf("格式错误:<command> <id>")
-	}
+
 	//=====================================
-	id, err := strconv.Atoi(ak[2])
+	id, err := strconv.Atoi(ak[0])
 	if err != nil {
 		return fmt.Errorf("输入命令转换错误:%w", err)
 	}

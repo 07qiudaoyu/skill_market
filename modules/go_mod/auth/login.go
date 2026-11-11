@@ -23,14 +23,9 @@ type Login_Response struct {
 
 func Login(ak []string) error {
 
-	if len(ak) != 4 {
-		return fmt.Errorf("格式错误:<command> <email> <password>")
-
-	}
-
 	Input := login{
-		Email:    ak[2],
-		Password: ak[3],
+		Email:    ak[0],
+		Password: ak[1],
 	}
 
 	fmt.Println("登入中：......")

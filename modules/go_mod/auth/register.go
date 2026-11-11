@@ -15,15 +15,11 @@ type register struct {
 }
 
 func Register(ak []string) error {
-	if len(ak) != 5 {
-		fmt.Println("格式错误：<command> <email> <name> <password>")
-		return fmt.Errorf("error")
-	}
 
 	Input := register{
-		Email:    ak[2],
-		Name:     ak[3],
-		Password: ak[4],
+		Email:    ak[0],
+		Name:     ak[1],
+		Password: ak[2],
 	}
 
 	//将go转换为json，用于post输入
