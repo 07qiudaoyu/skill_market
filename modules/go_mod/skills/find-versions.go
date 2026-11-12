@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // 返回的数据体versions带有的数据组
@@ -54,10 +56,26 @@ func FindVersions(ak []string) error {
 	fmt.Println("API 状态码:", resp.StatusCode)
 	fmt.Println("Message:", result.Message)
 	fmt.Printf("找到了 %d 个版本:\n", len(result.Versions))
+	//for _, v := range result.Versions {
+	//fmt.Printf("id:%d|\nskill_name:%s|\nversion:%s|\nszie_bytes:%d|\nextract_file_bytes:%d|\nfile_name:%s|\ncreated_at:%s|\nfounder_name:%s|\n",
+	//	v.ID, v.SKILL_NAME, v.VERSION, v.SIZE_BYTES, v.EXTRACT_FILE_BYTES, v.FILE_NAME, v.CREATED_AT, v.FOUNDER_NAME)
+	//}
+	//进行修改输出格式
+	//fmt.Printf("%5s %-10s %-20s %-8s %10s %10s\n", "ID", "FOUNDER_NAME", "SKILL_NAME", "VERSION", "SIZE_BYTES", "EXTRACT_FILE_BYTES")
+	//for _, v := range result.Versions {
+	//fmt.Printf("%5d %-10s %-15s %-8s %10d %10d\n", v.ID, v.FOUNDER_NAME, v.SKILL_NAME, v.VERSION, v.SIZE_BYTES, v.EXTRACT_FILE_BYTES)
+	//}中文占字符不一，有点难受，直接去找库
+	t := table.NewWriter()      //建立空表
+	t.SetStyle(table.StyleBold) //设定表格类型，这个事ASCII 风格，也就想mysql的一样
+	t.AppendHeader(table.Row{
+		"ID", "FOUNDER_NAME", "SKILL_NAME", "VERSION", "SIZE_BYTES", "EXTRACT_FILE_BYTES"})
+	// 表写完了，就将数据写进表里面
 	for _, v := range result.Versions {
-		fmt.Printf("id:%d|\nskill_name:%s|\nversion:%s|\nszie_bytes:%d|\nextract_file_bytes:%d|\nfile_name:%s|\ncreated_at:%s|\nfounder_name:%s|\n",
-			v.ID, v.SKILL_NAME, v.VERSION, v.SIZE_BYTES, v.EXTRACT_FILE_BYTES, v.FILE_NAME, v.CREATED_AT, v.FOUNDER_NAME)
+		t.AppendRow(table.Row{v.ID, v.FOUNDER_NAME, v.SKILL_NAME, v.VERSION, v.SIZE_BYTES, v.EXTRACT_FILE_BYTES})
 	}
+
+	t.Render()              //渲染表格
+	fmt.Println(t.Render()) //但我们渲染后还要输出呢
 	defer resp.Body.Close()
 	return nil
 }

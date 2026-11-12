@@ -72,7 +72,11 @@ func Login(ak []string) error {
 		return fmt.Errorf("登入失败") //不知道这错没错
 
 	}
-	fmt.Println("登入成功:", string(body))
+	//回复要把token隐藏掉
+	var m map[string]any
+	json.Unmarshal(body, &m)
+
+	fmt.Println("欢迎回来！", m["name"])
 	// 单独拿出我们要的token，将json在转换为go
 	var respData Login_Response
 	err = json.Unmarshal(body, &respData)
@@ -83,7 +87,7 @@ func Login(ak []string) error {
 	err = keyring.Set(
 		"skill_market/login/token",
 		"user_email",
-		ak[2],
+		ak[1],
 	)
 	if err != nil {
 		return fmt.Errorf("token查询保存错误:%w", err)
@@ -91,7 +95,7 @@ func Login(ak []string) error {
 	}
 	err = keyring.Set(
 		"skill_market/login/token",
-		ak[2], //用户邮件
+		ak[1], //用户邮件
 		respData.Token,
 	)
 	if err != nil {

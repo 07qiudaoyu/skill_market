@@ -23,7 +23,7 @@ func main() {
 				fmt.Println("登录错误:", err)
 				return err
 			}
-			fmt.Printf("登入成功")
+			fmt.Printf("登入成功\n")
 			return nil
 		},
 	}
@@ -48,7 +48,7 @@ func main() {
 				fmt.Println("skill下载失败:", err)
 				return err
 			}
-			fmt.Print("下载成功")
+			fmt.Print("下载成功\n")
 			return nil
 		},
 	}
@@ -61,7 +61,7 @@ func main() {
 				fmt.Println("skill查找错误:", err)
 				return err
 			}
-			fmt.Print("搜索成功")
+			fmt.Print("搜索成功\n")
 			return nil
 		},
 	}
