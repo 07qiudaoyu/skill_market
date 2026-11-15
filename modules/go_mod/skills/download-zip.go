@@ -8,12 +8,18 @@ import (
 	"mime" //用来从header里面拿文件名
 	"net/http"
 	"os"
-	"strconv" //用于强制转换的，将string变为int
+	"path/filepath" //文件路径拼接
+	"strconv"       //用于强制转换的，将string变为int
 )
 
-func DownloadZip(ak []string) error {
+func DownloadZip(ak []string, dir string) error {
+	ck := false
+	if dir != "" {
+		ck = true
+	}
 
 	//=====================================
+
 	id, err := strconv.Atoi(ak[0])
 	if err != nil {
 		return fmt.Errorf("输入命令转换错误:%w", err)
@@ -57,17 +63,29 @@ func DownloadZip(ak []string) error {
 		return fmt.Errorf("文件名读取错误：%w", err)
 	}
 	filename := parmas["filename"]
+
 	//2.开始进行下载，同时下载没成功要删除
-	file, err := os.Create(filename) //建立文件
+
+	var filename_1 string
+	if ck == false {
+		filename_1 = filepath.Join("..", "..", "download-zip", filename)
+	} else {
+		//dir为string
+		filename_1 = filepath.Join(dir, filename)
+
+	}
+	file, err := os.Create(filename_1) //建立文件
+
 	if err != nil {
 		return fmt.Errorf("文件创建错误:%w", err)
 	}
+
 	//=============================================
 	success := false
 	defer func() {
 		file.Close()
 		if !success {
-			os.Remove(filename)
+			os.Remove(filename_1)
 		}
 	}() //函数最后结束时执行的
 	n, err := io.Copy(file, resp.Body)
@@ -83,6 +101,12 @@ func DownloadZip(ak []string) error {
 	//====================================================
 
 	fmt.Printf("下载成功: %s (%d 字节)\n", filename, n)
+	filename_2, err := filepath.Abs(filename_1)
+	if err != nil {
+		fmt.Printf("绝对路径获取错误")
+	} else {
+		fmt.Printf("zip文件在:%s\n", filename_2)
+	}
 	return nil
 
 }

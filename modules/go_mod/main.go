@@ -44,14 +44,20 @@ func main() {
 		Short: "用户下载zip技能skills/download-zip",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := skills.DownloadZip(args); err != nil {
+			dir, err := cmd.Flags().GetString("dir")
+			if err != nil {
+				return err
+			}
+			if err := skills.DownloadZip(args, dir); err != nil {
 				fmt.Println("skill下载失败:", err)
 				return err
 			}
+
 			fmt.Print("下载成功\n")
 			return nil
 		},
 	}
+
 	fv := &cobra.Command{
 		Use:   "fv <uuid>",
 		Short: "用户通过客户端拿到uuid进行版本搜索skills/find-versions",
@@ -66,6 +72,7 @@ func main() {
 		},
 	}
 	root.AddCommand(lg, rg, dl, fv)
+	root.PersistentFlags().String("dir", "", "skill 安装目录:--dir <string>") //给所有子命令统一加上这个flags
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
