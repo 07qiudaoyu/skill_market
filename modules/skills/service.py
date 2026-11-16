@@ -58,6 +58,9 @@ class SkillsService:
         result=self.repository.Re_Find_Zip(skill_versions_id=skill_versions_id)
         if not result:
             raise HTTPException(status_code=404,detail="未找到版本信息")
+        uuid=self.repository.Re_f_skill_versions_g_uuid(skill_versions_id=skill_versions_id)
+        if not uuid:
+             raise HTTPException(status_code=404,detail="未找到对应uuid版本信息")
         file_path=os.path.join("data",result["storage_key"])
         if not os.path.isfile(file_path):
             raise HTTPException(status_code=404,detail="未找到对应的zip文件")
@@ -83,7 +86,7 @@ class SkillsService:
             file_download(file_path),
             media_type="application/zip",
             headers={
-               "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}"'
+               "Content-Disposition": f'attachment; filename="{os.path.basename(file_path)}";uuid="{uuid}"'
             }
         )
     #==========================================================
@@ -123,6 +126,7 @@ class SkillsService:
         #这里就开始写上传的函数操作
         file_path= Path("data") / result["storage_key"]
         file_name=result["file_name"]
+        
         headers={
             "Content-Disponsition":f'attachment; filename="{file_name}"'
         }

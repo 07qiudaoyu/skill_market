@@ -281,4 +281,23 @@ select id,name,slug from categories
           finally:
                 cursor.close()
 #===================================================================
-   
+    def Re_f_skill_versions_g_uuid(self,skill_versions_id:int):#这个接口开发，是为了cli会返回uuid设计，挂在dl接口的header上
+          cursor=self.conn.cursor()
+          try:
+                sql="""
+select skill_id from skill_versions where id=%s
+"""
+                cursor.execute(sql,(skill_versions_id,))
+                result=cursor.fetchone()
+                id=result["skill_id"]
+                sql1="""
+select public_id from skills where id=%s
+"""
+                cursor.execute(sql1,(id,))
+                result_1=cursor.fetchone()
+                uuid=result_1["public_id"]
+                return uuid
+          finally:
+                cursor.close()
+
+          

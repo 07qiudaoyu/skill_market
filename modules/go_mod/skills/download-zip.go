@@ -2,6 +2,7 @@
 package skills
 
 import (
+	"encoding/json"
 	"fmt"
 	"go_mod/security"
 	"io"
@@ -10,7 +11,15 @@ import (
 	"os"
 	"path/filepath" //文件路径拼接
 	"strconv"       //用于强制转换的，将string变为int
+	"strings"
 )
+
+type Record struct {
+	Slug    string `json:"slug"`
+	Version string `json:"version"`
+	Servers string `json:"servers"`
+	Uuid    string `json:"uuid"`
+}
 
 func DownloadZip(ak []string, dir string) error {
 	ck := false
@@ -27,6 +36,7 @@ func DownloadZip(ak []string, dir string) error {
 
 	//===========================================
 	url := "http://127.0.0.1:8000/api/v1/skills/Download_file?id=" + strconv.Itoa(id)
+
 	res, err := http.NewRequest(
 		http.MethodGet,
 		url,
@@ -62,22 +72,53 @@ func DownloadZip(ak []string, dir string) error {
 	if err != nil {
 		return fmt.Errorf("文件名读取错误：%w", err)
 	}
+
 	filename := parmas["filename"]
+	uuid := parmas["uuid"]
+	nam := strings.TrimSuffix(filename, ".zip") //取除字符串后缀
+	svs := strings.Split(nam, "_v")             //拿什么当间隔号
+	slug := svs[0]
+	sv := svs[1]
+
+	filename_4 := nam + ".json"
 
 	//2.开始进行下载，同时下载没成功要删除
 
 	var filename_1 string
+	var filename_2 string
+	data_json := Record{
+		Servers: "http://127.0.0.1:8000",
+		Slug:    slug,
+		Version: sv,
+		Uuid:    uuid,
+	}
+
 	if ck == false {
-		filename_1 = filepath.Join("..", "..", "download-zip", filename)
+		dir1 := filepath.Join("..", "..", "download-zip", nam)
+		err = os.MkdirAll(dir1, 0755)
+		if err != nil {
+			return fmt.Errorf("文件夹创建失败：%w", err)
+		}
+		filename_1 = filepath.Join(dir1, filename)
+		filename_2 = filepath.Join(dir1, filename_4)
 	} else {
-		//dir为string
-		filename_1 = filepath.Join(dir, filename)
+		dir1 := filepath.Join(dir, nam)
+		err = os.MkdirAll(dir1, 0755)
+		if err != nil {
+			return fmt.Errorf("文件夹创建失败：%w", err)
+		}
+		filename_1 = filepath.Join(dir1, filename)
+		filename_2 = filepath.Join(dir1, filename_4)
 
 	}
 	file, err := os.Create(filename_1) //建立文件
 
 	if err != nil {
-		return fmt.Errorf("文件创建错误:%w", err)
+		return fmt.Errorf("主文件创建错误:%w", err)
+	}
+	file_2, err := os.Create(filename_2)
+	if err != nil {
+		return fmt.Errorf("附属文件创建错误:%w", err)
 	}
 
 	//=============================================
@@ -86,6 +127,7 @@ func DownloadZip(ak []string, dir string) error {
 		file.Close()
 		if !success {
 			os.Remove(filename_1)
+			os.Remove(filename_2)
 		}
 	}() //函数最后结束时执行的
 	n, err := io.Copy(file, resp.Body)
@@ -93,19 +135,30 @@ func DownloadZip(ak []string, dir string) error {
 		return fmt.Errorf("下载错误: %w", err)
 	}
 
+	data, err := json.MarshalIndent(data_json, "", "    ")
+	if err != nil {
+		return fmt.Errorf("附属文件转换为json失败：%w", err)
+	}
+	err = os.WriteFile(filename_2, data, 0644)
+	if err != nil {
+		return fmt.Errorf("附属文件写入失败失败：%w", err)
+	}
 	if err := file.Close(); err != nil {
-		return fmt.Errorf("文件关闭错误: %w", err)
+		return fmt.Errorf("主文件关闭错误: %w", err)
+	}
+	if err := file_2.Close(); err != nil {
+		return fmt.Errorf("附属文件关闭错误: %w", err)
 	}
 
 	success = true
 	//====================================================
 
 	fmt.Printf("下载成功: %s (%d 字节)\n", filename, n)
-	filename_2, err := filepath.Abs(filename_1)
+	filename_3, err := filepath.Abs(filename_1)
 	if err != nil {
 		fmt.Printf("绝对路径获取错误")
 	} else {
-		fmt.Printf("zip文件在:%s\n", filename_2)
+		fmt.Printf("zip文件在:%s\n", filename_3)
 	}
 	return nil
 
