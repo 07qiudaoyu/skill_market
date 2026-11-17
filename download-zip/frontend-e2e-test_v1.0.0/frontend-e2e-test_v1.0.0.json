@@ -1,6 +1,0 @@
-{
-    "slug": "frontend-e2e-test",
-    "version": "1.0.0",
-    "servers": "http://127.0.0.1:8000",
-    "uuid": "uuid-1"
-}

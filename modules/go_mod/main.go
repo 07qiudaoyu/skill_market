@@ -45,10 +45,15 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := cmd.Flags().GetString("dir")
+
 			if err != nil {
 				return err
 			}
-			if err := skills.DownloadZip(args, dir); err != nil {
+			ls, err := cmd.Flags().GetBool("ls")
+			if err != nil {
+				return err
+			}
+			if err := skills.DownloadZip(args, dir, ls); err != nil {
 				fmt.Println("skill下载失败:", err)
 				return err
 			}
@@ -62,6 +67,7 @@ func main() {
 		Use:   "fv <uuid>",
 		Short: "用户通过客户端拿到uuid进行版本搜索skills/find-versions",
 		Args:  cobra.ExactArgs(1),
+
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := skills.FindVersions(args); err != nil {
 				fmt.Println("skill查找错误:", err)
@@ -73,6 +79,7 @@ func main() {
 	}
 	root.AddCommand(lg, rg, dl, fv)
 	root.PersistentFlags().String("dir", "", "skill 安装目录:--dir <string>") //给所有子命令统一加上这个flags
+	root.PersistentFlags().Bool("ls", false, "列出这个skill附带json文件")
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}

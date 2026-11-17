@@ -12,6 +12,8 @@ import (
 	"path/filepath" //文件路径拼接
 	"strconv"       //用于强制转换的，将string变为int
 	"strings"
+
+	"github.com/jedib0t/go-pretty/v6/table" //打印附属文件json信息
 )
 
 type Record struct {
@@ -21,7 +23,7 @@ type Record struct {
 	Uuid    string `json:"uuid"`
 }
 
-func DownloadZip(ak []string, dir string) error {
+func DownloadZip(ak []string, dir string, ls bool) error {
 	ck := false
 	if dir != "" {
 		ck = true
@@ -86,6 +88,7 @@ func DownloadZip(ak []string, dir string) error {
 
 	var filename_1 string
 	var filename_2 string
+	var filename_91 string
 	data_json := Record{
 		Servers: "http://127.0.0.1:8000",
 		Slug:    slug,
@@ -101,6 +104,7 @@ func DownloadZip(ak []string, dir string) error {
 		}
 		filename_1 = filepath.Join(dir1, filename)
 		filename_2 = filepath.Join(dir1, filename_4)
+		filename_91 = filepath.Join(dir1, "07qiudaoyu_SkillMarket.txt")
 	} else {
 		dir1 := filepath.Join(dir, nam)
 		err = os.MkdirAll(dir1, 0755)
@@ -109,6 +113,7 @@ func DownloadZip(ak []string, dir string) error {
 		}
 		filename_1 = filepath.Join(dir1, filename)
 		filename_2 = filepath.Join(dir1, filename_4)
+		filename_91 = filepath.Join(dir1, "07qiudaoyu_SkillMarket.txt")
 
 	}
 	file, err := os.Create(filename_1) //建立文件
@@ -120,6 +125,10 @@ func DownloadZip(ak []string, dir string) error {
 	if err != nil {
 		return fmt.Errorf("附属文件创建错误:%w", err)
 	}
+	file91, err := os.Create(filename_91) //建立就行，不看内容-->改，前面是隐藏文件，但考虑到用户清理不方便，显示，要用内容
+	if err != nil {
+		return fmt.Errorf("标记文件创建失败:%w", err)
+	}
 
 	//=============================================
 	success := false
@@ -128,6 +137,7 @@ func DownloadZip(ak []string, dir string) error {
 		if !success {
 			os.Remove(filename_1)
 			os.Remove(filename_2)
+			os.Remove(filename_91)
 		}
 	}() //函数最后结束时执行的
 	n, err := io.Copy(file, resp.Body)
@@ -143,12 +153,32 @@ func DownloadZip(ak []string, dir string) error {
 	if err != nil {
 		return fmt.Errorf("附属文件写入失败失败：%w", err)
 	}
+	data_biaoji := []byte("该文件用于标记文件夹，若删除，将导致其绑定的skill，在其目录下，不能进入列表")
+
+	err = os.WriteFile(filename_91, data_biaoji, 0644)
+	if err != nil {
+		return fmt.Errorf("标记文件写入失败失败：%w", err)
+	}
+
 	if err := file.Close(); err != nil {
 		return fmt.Errorf("主文件关闭错误: %w", err)
 	}
 	if err := file_2.Close(); err != nil {
 		return fmt.Errorf("附属文件关闭错误: %w", err)
 	}
+	if err := file91.Close(); err != nil {
+		return fmt.Errorf("标记文件关闭错误: %w", err)
+	}
+
+	//+++++++++++++++++++++++++++++++++++完善区域+++++++++++++++++++++++++++
+	ls = true //留个尾巴
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	t := table.NewWriter()
+	t.SetStyle(table.StyleBold)
+	t.AppendHeader(table.Row{"SERVERS|来源", "SLUG|名字", "VERSION|版本", "UUID|uuid"})
+	t.AppendRow(table.Row{data_json.Servers, data_json.Slug, data_json.Version, data_json.Uuid})
+	t.Render()              //渲染表格
+	fmt.Println(t.Render()) //但我们渲染后还要输出呢
 
 	success = true
 	//====================================================
