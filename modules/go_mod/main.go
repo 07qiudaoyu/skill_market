@@ -49,11 +49,16 @@ func main() {
 			if err != nil {
 				return err
 			}
-			ls, err := cmd.Flags().GetBool("ls")
+			Als, err := cmd.Flags().GetBool("Als")
 			if err != nil {
 				return err
 			}
-			if err := skills.DownloadZip(args, dir, ls); err != nil {
+			Ols, err := cmd.Flags().GetBool("Ols")
+			if err != nil {
+				return err
+			}
+
+			if err := skills.DownloadZip(args, dir, Als, Ols); err != nil {
 				fmt.Println("skill下载失败:", err)
 				return err
 			}
@@ -79,7 +84,8 @@ func main() {
 	}
 	root.AddCommand(lg, rg, dl, fv)
 	root.PersistentFlags().String("dir", "", "skill 安装目录:--dir <string>") //给所有子命令统一加上这个flags
-	root.PersistentFlags().Bool("ls", false, "列出这个skill附带json文件")
+	root.PersistentFlags().Bool("Als", false, "列出该目录下所有skill附带json文件信息表")
+	root.PersistentFlags().Bool("Ols", false, "列出该下载skill附带json文件信息表")
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}

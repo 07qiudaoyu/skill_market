@@ -16,14 +16,17 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table" //打印附属文件json信息
 )
 
+const marker = "07qiudaoyu_SkillMarket.txt"
+
 type Record struct {
 	Slug    string `json:"slug"`
 	Version string `json:"version"`
 	Servers string `json:"servers"`
 	Uuid    string `json:"uuid"`
+	Source  string `json:"source"`
 }
 
-func DownloadZip(ak []string, dir string, ls bool) error {
+func DownloadZip(ak []string, dir string, Als bool, Ols bool) error {
 	ck := false
 	if dir != "" {
 		ck = true
@@ -82,39 +85,47 @@ func DownloadZip(ak []string, dir string, ls bool) error {
 	slug := svs[0]
 	sv := svs[1]
 
-	filename_4 := nam + ".json"
+	filename_4 := "record.json"
 
 	//2.开始进行下载，同时下载没成功要删除
 
 	var filename_1 string
 	var filename_2 string
 	var filename_91 string
+	var dir1 string
+
+	if ck == false {
+		dir1 = filepath.Join("..", "..", "download-zip", nam)
+		err = os.MkdirAll(dir1, 0755)
+		if err != nil {
+			return fmt.Errorf("文件夹创建失败：%w", err)
+		}
+		filename_1 = filepath.Join(dir1, filename)
+		filename_2 = filepath.Join(dir1, filename_4)
+		filename_91 = filepath.Join(dir1, marker)
+	} else {
+		dir1 = filepath.Join(dir, nam)
+		err = os.MkdirAll(dir1, 0755)
+		if err != nil {
+			return fmt.Errorf("文件夹创建失败：%w", err)
+		}
+		filename_1 = filepath.Join(dir1, filename)
+		filename_2 = filepath.Join(dir1, filename_4)
+		filename_91 = filepath.Join(dir1, marker)
+
+	}
+
+	filename_3, err := filepath.Abs(filename_1)
+	if err != nil {
+		fmt.Printf("绝对路径获取错误")
+		return nil
+	}
 	data_json := Record{
 		Servers: "http://127.0.0.1:8000",
 		Slug:    slug,
 		Version: sv,
 		Uuid:    uuid,
-	}
-
-	if ck == false {
-		dir1 := filepath.Join("..", "..", "download-zip", nam)
-		err = os.MkdirAll(dir1, 0755)
-		if err != nil {
-			return fmt.Errorf("文件夹创建失败：%w", err)
-		}
-		filename_1 = filepath.Join(dir1, filename)
-		filename_2 = filepath.Join(dir1, filename_4)
-		filename_91 = filepath.Join(dir1, "07qiudaoyu_SkillMarket.txt")
-	} else {
-		dir1 := filepath.Join(dir, nam)
-		err = os.MkdirAll(dir1, 0755)
-		if err != nil {
-			return fmt.Errorf("文件夹创建失败：%w", err)
-		}
-		filename_1 = filepath.Join(dir1, filename)
-		filename_2 = filepath.Join(dir1, filename_4)
-		filename_91 = filepath.Join(dir1, "07qiudaoyu_SkillMarket.txt")
-
+		Source:  filename_3,
 	}
 	file, err := os.Create(filename_1) //建立文件
 
@@ -149,6 +160,7 @@ func DownloadZip(ak []string, dir string, ls bool) error {
 	if err != nil {
 		return fmt.Errorf("附属文件转换为json失败：%w", err)
 	}
+
 	err = os.WriteFile(filename_2, data, 0644)
 	if err != nil {
 		return fmt.Errorf("附属文件写入失败失败：%w", err)
@@ -171,25 +183,26 @@ func DownloadZip(ak []string, dir string, ls bool) error {
 	}
 
 	//+++++++++++++++++++++++++++++++++++完善区域+++++++++++++++++++++++++++
-	ls = true //留个尾巴
+	if Als != false {
+		err = CreateTable(dir1) //------------------------
+		if err != nil {
+			fmt.Print("建表失败:%w", err)
+		}
+	}
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	t := table.NewWriter()
-	t.SetStyle(table.StyleBold)
-	t.AppendHeader(table.Row{"SERVERS|来源", "SLUG|名字", "VERSION|版本", "UUID|uuid"})
-	t.AppendRow(table.Row{data_json.Servers, data_json.Slug, data_json.Version, data_json.Uuid})
-	t.Render()              //渲染表格
-	fmt.Println(t.Render()) //但我们渲染后还要输出呢
-
+	if Ols != false {
+		t := table.NewWriter()
+		t.SetStyle(table.StyleBold)
+		t.AppendHeader(table.Row{"SERVERS|来源", "SLUG|名字", "VERSION|版本", "UUID|uuid", "LOCATION|zip地址目录"})
+		t.AppendRow(table.Row{data_json.Servers, data_json.Slug, data_json.Version, data_json.Uuid, data_json.Source})
+		t.Render()              //渲染表格
+		fmt.Println(t.Render()) //但我们渲染后还要输出呢
+	}
 	success = true
 	//====================================================
 
 	fmt.Printf("下载成功: %s (%d 字节)\n", filename, n)
-	filename_3, err := filepath.Abs(filename_1)
-	if err != nil {
-		fmt.Printf("绝对路径获取错误")
-	} else {
-		fmt.Printf("zip文件在:%s\n", filename_3)
-	}
+
 	return nil
 
 }
