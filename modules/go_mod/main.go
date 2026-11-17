@@ -13,6 +13,15 @@ func main() {
 	root := &cobra.Command{
 		Use:   "greet",
 		Short: "提供注册，登入，下载及搜索功能",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir, err := cmd.Flags().GetString("dir")
+			if err != nil {
+				return err
+			}
+			dir1 := skills.Dirmakeup(dir)
+
+			return skills.CreateTable(dir1)
+		},
 	}
 	lg := &cobra.Command{
 		Use:   "lg <邮件email> <密码password>",

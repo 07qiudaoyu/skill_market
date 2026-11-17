@@ -184,7 +184,9 @@ func DownloadZip(ak []string, dir string, Als bool, Ols bool) error {
 
 	//+++++++++++++++++++++++++++++++++++完善区域+++++++++++++++++++++++++++
 	if Als != false {
-		err = CreateTable(dir1) //------------------------
+		dirk := filepath.Dir(dir1)
+
+		err = CreateTable(dirk) //------------------------
 		if err != nil {
 			fmt.Print("建表失败:%w", err)
 		}

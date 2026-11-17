@@ -9,8 +9,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-func CreateTable(dir string) error {
-	dir1 := filepath.Dir(dir)
+func CreateTable(dir1 string) error {
 
 	entries, err := os.ReadDir(dir1)
 	if err != nil {
