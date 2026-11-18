@@ -91,7 +91,20 @@ func main() {
 			return nil
 		},
 	}
-	root.AddCommand(lg, rg, dl, fv)
+	sc := &cobra.Command{
+		Use:   "sc <q|关键词> <sort|排序方式//newest,downloads,rating> <page> <size>",
+		Short: "用户简单搜索skills",
+		Args:  cobra.ExactArgs(4),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := skills.SearchSkill(args); err != nil {
+				fmt.Println("skill搜索错误:", err)
+				return err
+			}
+			fmt.Print("搜索成功\n")
+			return nil
+		},
+	}
+	root.AddCommand(lg, rg, dl, fv, sc)
 	root.PersistentFlags().String("dir", "", "skill 安装目录:--dir <string>") //给所有子命令统一加上这个flags
 	root.PersistentFlags().Bool("Als", false, "列出该目录下所有skill附带json文件信息表")
 	root.PersistentFlags().Bool("Ols", false, "列出该下载skill附带json文件信息表")

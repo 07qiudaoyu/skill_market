@@ -22,6 +22,7 @@ class SkillListItem(BaseModel):#在我的搜索接口使用下，这个是起文
     created_at: datetime
 class SkillSearchResponse(BaseModel):
     message: str
+    total:int
     items: list[SkillListItem]
     page: int
     size: int

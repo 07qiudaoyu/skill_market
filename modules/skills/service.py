@@ -27,10 +27,13 @@ class SkillsService:
             sort=sort, page=page, size=size
         )
         return {
+              
             "message": "搜索成功",
-            "items": items,
+            "total":items["result1"],
+            "items": items["result"],
             "page": page,
             "size": size
+           
         }
     def find_skill_versions(self,public_id:str):
         result = self.repository.Find_skill_versions(

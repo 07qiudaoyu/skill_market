@@ -18,15 +18,15 @@ class SkillsRepository:
         cursor = self.conn.cursor()
         condition=[]
         params=[]
-        tags=tags.split(",") if tags else []
-        if q:    
+        tags=tags.split(",") if tags else []#"a,b,c"-->"a","b","c"
+        if q:    #用户输入自己想要找到的东西
                     condition.append("(s.display_name like %s or s.summary like %s)")
                     params.extend([f"%{q}%",f"%{q}%"])#一次行放多个
         if category:
                     condition.append("c.slug =%s")
                     params.append(category)#一次行放一个
         if tags:
-                    ak=",".join(["%s"]*len(tags))
+                    ak=",".join(["%s"]*len(tags))#"%s","%s","%s"-->"%s,%s,%s"
                     #我的tags时str形式的输入，不是list，不要与schemas文本规范作用混淆了
                     condition.append(f"""
         s.id in(select skill_id from skill_tags st
@@ -54,6 +54,7 @@ class SkillsRepository:
                 
         sql = f"""
         SELECT
+        
             s.public_id, s.slug, s.display_name, s.summary,
             s.download_count, s.rating_avg, s.created_at,
             c.name AS category_name,
@@ -69,6 +70,20 @@ class SkillsRepository:
         """
         cursor.execute(sql, tuple(params))
         result=cursor.fetchall()
+        sql1=f"""
+SELECT
+        
+           COUNT(DISTINCT s.id)
+        FROM skills s
+        LEFT JOIN categories c ON s.category_id = c.id
+        LEFT JOIN skill_tags st ON s.id = st.skill_id
+        LEFT JOIN tags t ON st.tag_id = t.id
+        {where_sql}
+       
+
+"""
+        cursor.execute(sql1,tuple(params[:-2]))
+        result1=cursor.fetchone()
         
         # 把 tag_names 字符串转成列表,也就是我们这个tags
         
@@ -78,7 +93,9 @@ class SkillsRepository:
             else:
                 row["tags"] = []
             del row["tag_names"]
-        return result
+        
+        return {"result":result,"result1":result1["COUNT(DISTINCT s.id)"]}
+    #===========================================
     def Find_skill_versions(self,public_id:str):
             cursor=self.conn.cursor()
             try:
