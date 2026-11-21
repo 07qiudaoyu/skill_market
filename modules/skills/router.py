@@ -117,3 +117,21 @@ async def Re_GitHub_post(
     service:SkillsService=Depends(get_skill_service) 
 ):
     return await service.SE_GitHub_post(url1=url1,payload=payload)
+@router.get(
+    "/Cli_downloadzip",
+    status_code=status.HTTP_200_OK
+)
+def Re_Cli_downloadzip(
+    slug:str,
+    versions:str|None=None,
+    payload:dict=Depends(header_token),
+    
+    service:SkillsService=Depends(get_skill_service) 
+
+):
+    skill_versions_id=service.Se_f_versions_id(slug=slug,version=versions)
+    return service.Se_Download_Zip(
+            skill_versions_id=skill_versions_id,
+            payload=payload
+        )
+

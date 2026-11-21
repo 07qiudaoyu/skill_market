@@ -49,15 +49,18 @@ class SkillsService:
 "versions":result
         }
     #----------------------------------------------------
-    def Se_Download_Zip(self,skill_versions_id:int,payload:dict):#本地的
+    def Se_Download_Zip(self,skill_versions_id:int,
+                        payload:dict
+                        ):#本地的
         
         
         if payload is None:
-                    raise HTTPException(
-                        status_code=401,
-                        detail="token错误!游客现不支持下载skill,请登入"
-                    )
+                   raise HTTPException(
+                      status_code=401,
+                       detail="token错误!游客现不支持下载skill,请登入"
+                   )
         user_id=payload["id"]
+      
         result=self.repository.Re_Find_Zip(skill_versions_id=skill_versions_id)
         if not result:
             raise HTTPException(status_code=404,detail="未找到版本信息")
@@ -248,4 +251,12 @@ class SkillsService:
               "message":"ok",
               "limit":ak 
          }
-         
+    def Se_f_versions_id(self,slug:str,version:str|None=None):
+          
+          result1=self.repository.Re_f_newest_versions(slug=slug,version=version)
+          if not result1:
+               raise HTTPException(
+                    status_code=404,
+                    detail="未找到对应slug信息"
+               )
+          return result1

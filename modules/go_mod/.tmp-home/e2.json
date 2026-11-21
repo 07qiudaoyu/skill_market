@@ -1,0 +1,32 @@
+升级 big-demo-skill
+{
+  "ok": false,
+  "error": {
+    "message": "账本里 big-demo-skill 记在 \"foo\" 上，但它已不是合法 target:未知的 target \"foo\"，可选值:claude-code, codex, cursor, global, qoder"
+  },
+  "data": {
+    "count": 2,
+    "items": [
+      {
+        "slug": "big-demo-skill",
+        "target": "claude-code",
+        "from": "1.0.0",
+        "to": "2.0.0",
+        "path": "/Users/07deqiudaoyu/Desktop/skill_market/modules/go_mod/.tmp-home/.claude/skills/big-demo-skill",
+        "copied": 77,
+        "removed": 0,
+        "skipped": false
+      },
+      {
+        "slug": "big-demo-skill",
+        "target": "cursor",
+        "from": "1.0.0",
+        "to": "2.0.0",
+        "path": "/Users/07deqiudaoyu/Desktop/skill_market/modules/go_mod/.tmp-home/.cursor/skills/big-demo-skill",
+        "copied": 77,
+        "removed": 0,
+        "skipped": false
+      }
+    ]
+  }
+}

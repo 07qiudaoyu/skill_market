@@ -135,7 +135,9 @@ select storage_key from skill_versions where id=%s
            finally:
                   cursor.close()
 #=================================================================
-    def Re_Uerts_download(self,user_id:int,skill_versions_id:int)->bool:
+    def Re_Uerts_download(self,
+                          user_id:int,
+                          skill_versions_id:int)->bool:
            cursor=self.conn.cursor()
            try:
                  sql="""
@@ -316,5 +318,34 @@ select public_id from skills where id=%s
                 return uuid
           finally:
                 cursor.close()
+    #==================cli服务==================================
+    def Re_f_newest_versions(self,slug:str,version:str|None=None):
+          cursor=self.conn.cursor()
+          try:
+                if  version is None:
+                      sql="""
+select latest_version_id from skills where slug=%s
 
+"""
+                      cursor.execute(sql,(slug,))
+                      result=cursor.fetchone()
+                      if not result:#slug 不存在,交给 service 层报 404,不要直接下标导致 500
+                            return None
+                      skill_versions_id=result["latest_version_id"]
+                else:
+                      sql="""
+select id from skill_versions where skill_id in(select id from skills where slug =%s) and version =%s
+
+"""
+                      cursor.execute(sql,(slug,version,))
+                      result=cursor.fetchone()
+                      if not result:#该版本不存在,交给 service 层报 404,不要直接下标导致 500
+                            return None
+                      skill_versions_id=result["id"]
+                return skill_versions_id
+                
+          finally:
+                      cursor.close()
+                
+                
           

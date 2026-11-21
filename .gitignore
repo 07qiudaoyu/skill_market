@@ -17,3 +17,7 @@ __pycache__/
 
 .venv/
 venv/
+
+/modules/go_mod/skillctl
+/modules/go_mod/skillctl-*
+/modules/go_mod/dist/

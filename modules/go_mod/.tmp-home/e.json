@@ -1,0 +1,6 @@
+{
+  "ok": false,
+  "error": {
+    "message": "未登入或缺少 token:请先执行 skillctl auth login,或设置 DR_ACCESS_TOKEN 环境变量"
+  }
+}
