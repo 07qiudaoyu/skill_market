@@ -23,9 +23,9 @@ type versionInfo struct {
 	OS       string `json:"os"`
 	Arch     string `json:"arch"`
 	Server   string `json:"server"`
-	LoggedIn bool   `json:"loggedIn"`
+	LoggedIn bool   `json:"logged_in"`
 	Email    string `json:"email,omitempty"`
-	UserID   int    `json:"userId,omitempty"`
+	UserID   int    `json:"user_id,omitempty"`
 }
 
 var VersionCmd = &cobra.Command{

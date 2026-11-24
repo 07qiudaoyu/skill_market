@@ -1,5 +1,6 @@
 // 登入：把邮箱密码交给后端换 token，成功后写入 ~/.skillctl/config.json。
-// 密码不落盘，也不建议写在命令行里（会进 shell 历史），可用 SKILLCTL_PASSWORD。
+// 密码只用于这一次请求：不落盘、不进 config.json。
+// 写进命令行会留在 shell 历史里，这是明知的取舍 —— 换少一条取值分支。
 package oneself
 
 import (
@@ -8,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	constantquantity "go_mod/constant_quantity"
 	"go_mod/output"
@@ -33,7 +33,7 @@ type loginResponse struct {
 
 // loginResult 给 --json 用。刻意不含 token：token 只落盘，不出现在任何输出里。
 type loginResult struct {
-	UserID  int    `json:"userId"`
+	UserID  int    `json:"user_id"`
 	Name    string `json:"name"`
 	Email   string `json:"email"`
 	Message string `json:"message"`
@@ -47,12 +47,8 @@ var LoginCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email, _ := cmd.Flags().GetString("email")
 		password, _ := cmd.Flags().GetString("password")
-		if password == "" {
-			// 不传 --password 时读环境变量，避免密码留在命令历史里
-			password = os.Getenv("SKILLCTL_PASSWORD")
-		}
 		if email == "" || password == "" {
-			return fmt.Errorf("必须提供 --email 和 --password(或设置 SKILLCTL_PASSWORD 环境变量)")
+			return fmt.Errorf("必须提供 --email 和 --password")
 		}
 
 		res, err := Login(email, password)
@@ -123,5 +119,5 @@ func Login(email, password string) (*loginResponse, error) {
 
 func init() {
 	LoginCmd.Flags().String("email", "", "登入邮箱")
-	LoginCmd.Flags().String("password", "", "登入密码(不传则读 SKILLCTL_PASSWORD 环境变量)")
+	LoginCmd.Flags().String("password", "", "登入密码")
 }

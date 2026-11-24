@@ -24,7 +24,7 @@ type UninstallResult struct {
 	Path    string   `json:"path"`
 	Removed int      `json:"removed"`        // 删掉的文件数
 	Kept    []string `json:"kept,omitempty"` // 目录里剩下的、不是 skillctl 装的文件（相对路径）
-	DirGone bool     `json:"dirGone"`        // 技能目录是否已经整个消失
+	DirGone bool     `json:"dir_gone"`       // 技能目录是否已经整个消失
 }
 
 // uninstallPayload --json 时的 data 结构。

@@ -17,7 +17,8 @@ func main() {
 			os.Exit(1)
 		}
 		// 错误统一在这里打一次，不打 usage、不打堆栈
-		if JSONRequested() {
+		// jsonInArgs 兜住"命令名写错"：那时 flag 没被解析，JSONRequested() 读不到
+		if JSONRequested() || jsonInArgs(os.Args[1:]) {
 			output.Fail(err)
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)

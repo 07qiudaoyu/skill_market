@@ -29,6 +29,3 @@ func FindVersionsURL(publicID string) string {
 	q.Set("public_id", publicID)
 	return constantquantity.ServerURL() + "/api/v1/skills/find_versions?" + q.Encode()
 }
-
-// Ddownload_url 旧常量，install.go 重写前临时保留，避免这一版编译不过。
-const Ddownload_url = constantquantity.Default_url + "/api/v1/skills/Cli_downloadzip?slug="

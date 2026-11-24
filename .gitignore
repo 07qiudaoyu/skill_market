@@ -9,15 +9,22 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
-#env
+
+# 环境变量
 .env
 
-__pycache__/
-*.pyc
-
+# 虚拟环境
 .venv/
 venv/
 
+# Go CLI 构建产物
 /modules/go_mod/skillctl
 /modules/go_mod/skillctl-*
 /modules/go_mod/dist/
+
+# Go CLI 端到端验证用的隔离 HOME
+# 装进去的 skill、登录态、输出快照都是跑测产物，不进库
+/modules/go_mod/.tmp-home/
+
+# 报告生成物（报告 PDF / 截图 / 转码脚本）
+/.build_report/

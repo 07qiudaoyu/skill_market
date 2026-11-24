@@ -22,6 +22,7 @@ var targetPaths = map[string]string{
 	"codex":       ".codex/skills",
 	"cursor":      ".cursor/skills",
 	"qoder":       ".qoder/skills",
+	"dsh":         ".dsh/skills",
 }
 
 // ValidTargets 返回排好序的合法 target，用于报错时列给用户。

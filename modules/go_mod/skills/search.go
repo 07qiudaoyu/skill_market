@@ -18,6 +18,9 @@ var SearchCmd = &cobra.Command{
 		page, _ := cmd.Flags().GetInt("page")
 		limit, _ := cmd.Flags().GetInt("limit")
 
+		if err := checkListArgs(page, limit, sortBy); err != nil {
+			return err
+		}
 		resp, err := SearchSkills(args[0], category, sortBy, page, limit)
 		if err != nil {
 			return err

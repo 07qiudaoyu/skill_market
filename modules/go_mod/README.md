@@ -9,8 +9,10 @@ Skill Market 的命令行客户端：搜索技能、装进 agent 会读的目录
 ## 30 秒上手
 
 ```bash
-# 1. 登入（token 落到 ~/.skillctl/config.json，权限 0600）
-skillctl auth login --email you@example.com --password ******
+# 1. 没有账号先注册（注册成功会顺手登入）；已有账号直接 login
+skillctl auth register --email you@example.com --name 小明 --password ******
+skillctl auth login    --email you@example.com --password ******
+# token 落到 ~/.skillctl/config.json，权限 0600
 
 # 2. 看看市场有什么
 skillctl skill list
@@ -58,7 +60,8 @@ shasum -a 256 -c checksums.txt
 ## 命令速查
 
 ```
-skillctl auth login  --email <邮箱> [--password <密码>]
+skillctl auth register --email <邮箱> --name <名字> [--password <密码>]
+skillctl auth login    --email <邮箱> [--password <密码>]
 skillctl auth logout
 skillctl version
 
@@ -88,7 +91,18 @@ skillctl skill upgrade   <slug> [--version <版本>]
 | `DR_ACCESS_TOKEN` | 鉴权 token，CI 里用这个 |
 | `DR_SKILL_MARKET_TOKEN` | 同上，备用名 |
 | `SKILLCTL_SERVER` | 后端地址 |
-| `SKILLCTL_PASSWORD` | 登入密码，避免写进 shell 历史 |
+
+> 密码没有环境变量入口，只能 `--password` 传。写进命令行会留在 shell 历史里，这是为了少一条取值分支接受的代价；`config.json` 里只存 token，不存密码。
+
+### 分页、排序与搜索的边界
+
+- `--limit` 取值 **1~100**（默认 10），`--page` 从 1 开始。超范围在本地直接报错，不会发给后端
+  —— 以前 `--limit=-1` 会让后端回 500，`--limit=0` 会静默返回空列表。
+- `--sort` 只有三个值：`newest` / `downloads` / `rating`。写错会报错（以前是静默按时间排）。
+- `search` 的关键词只匹配**技能名字**（display_name）和**简介**（summary），**不匹配 slug**。
+  slug 是标识符不是描述，所以搜 `demo` 找不到 `big-demo-skill`，搜"大仓库"才能找到。
+- 列表里的 `DOWNLOADS` 是**去重后的 (用户, 版本) 组合数**，不是总下载次数。
+  同一个人反复装同一版本，这个数字不会涨。
 
 ### 支持的 target
 

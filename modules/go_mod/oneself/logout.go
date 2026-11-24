@@ -10,7 +10,7 @@ import (
 
 // logoutResult 给 --json 用。
 type logoutResult struct {
-	LoggedOut bool   `json:"loggedOut"`
+	LoggedOut bool   `json:"logged_out"`
 	Email     string `json:"email,omitempty"`
 	Message   string `json:"message"`
 }

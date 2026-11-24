@@ -40,6 +40,30 @@ type SkillSearchResponse struct {
 	Size    int             `json:"size"`
 }
 
+// maxPageSize 本地兜的上限。后端对 size 没有校验，传多大就查多大，这里替它挡一下。
+const maxPageSize = 100
+
+var validSorts = map[string]bool{"newest": true, "downloads": true, "rating": true}
+
+// checkListArgs 在发请求前把非法的分页/排序参数拦下来。
+//
+// 不拦的后果都是"静默出错"：
+//   - limit < 0：后端拼出 `LIMIT -1`，MySQL 直接抛异常 → 500 Internal Server Error
+//   - limit = 0：后端正常返回空列表，用户以为"没有数据"，其实是他写错了
+//   - sort 写错：后端 sort_map.get(sort, "s.created_at DESC") 静默回退成按时间排序
+func checkListArgs(page, limit int, sortBy string) error {
+	if page < 1 {
+		return fmt.Errorf("--page 必须 ≥ 1（收到 %d）", page)
+	}
+	if limit < 1 || limit > maxPageSize {
+		return fmt.Errorf("--limit 必须在 1~%d 之间（收到 %d）", maxPageSize, limit)
+	}
+	if !validSorts[sortBy] {
+		return fmt.Errorf("--sort 只能是 newest / downloads / rating（收到 %q）", sortBy)
+	}
+	return nil
+}
+
 var ListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "列出市场的技能，或本机已安装的技能",
@@ -65,6 +89,9 @@ var ListCmd = &cobra.Command{
 		page, _ := cmd.Flags().GetInt("page")
 		limit, _ := cmd.Flags().GetInt("limit")
 
+		if err := checkListArgs(page, limit, sortBy); err != nil {
+			return err
+		}
 		resp, err := SearchSkills("", category, sortBy, page, limit)
 		if err != nil {
 			return err
@@ -140,7 +167,7 @@ type installedItem struct {
 	Version     string `json:"version"`
 	UUID        string `json:"uuid,omitempty"`
 	Path        string `json:"path"`
-	InstalledAt string `json:"installedAt"`
+	InstalledAt string `json:"installed_at"`
 	Files       int    `json:"files"`
 }
 

@@ -16,8 +16,10 @@ PLATFORMS := darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 windows/amd64 win
 
 .PHONY: build dist check fmt vet test clean dist-clean
 
+# CGO_ENABLED=0 必须跟 dist 一致：默认（=1）会链接 cgo，同一个平台
+# make build 和 make dist 出的二进制字节不同，本地核对的 sha 跟发布包对不上。
 build:
-	go build -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -o $(BINARY) .
 
 dist: dist-clean
 	@mkdir -p $(DIST)
