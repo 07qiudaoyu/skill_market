@@ -1417,6 +1417,78 @@ Error: 注册失败，状态码 409:邮件已被注册
 
 这就是第 6 节"反证法"的又一次应用：验证"某条路已经不存在"，比验证"另一条路存在"更需要构造巧妙的输入。
 
+### 9.9 补 `skill categories`：让 `--category` 可查
+
+来源和前面几条不同 —— 不是审计，是项目负责人自己试命令时撞上的："`--category` 到底填什么？"
+
+#### 现象
+
+| 输入 | 结果 |
+|---|---|
+| `--category web-dev` | 3 个技能 ✅ |
+| `--category Web开发` | **0 个，不报错** |
+| `--category nope` | **0 个，不报错** |
+
+后端 SQL 是 `c.slug = %s`，只认 slug。而 `list` 表格的 CATEGORY 列显示的是中文名。**两处用的不是同一个字段，但用户看不到这个区别。**
+
+三处共同造成了"像 bug"的观感：
+
+1. `--help` 只写"按分类过滤"，没说填什么
+2. CLI 里查不到 slug 列表（后端其实有 `GET /api/v1/skills/All_categories`，一直没接）
+3. 填错静默返回空，和"这个分类下真的没技能"无法区分
+
+#### 改动
+
+新增 `skills/categories.go`（94 行）：
+
+```go
+var CategoriesCmd = &cobra.Command{Use: "categories", ...}
+```
+
+数据直接来自 `/All_categories`，CLI 不做任何加工。**这个接口有个和别处不同的地方：返回裸数组 `[{id,name,slug}]`，没有信封。** 所以 `fetchCategories` 直接 unmarshal 成切片，不能复用 `SkillSearchResponse` 那套结构。
+
+顺手改了两处帮助文本：
+
+```
+--category string   按分类过滤，填分类 slug（用 skillctl skill categories 查看）
+```
+
+#### 为什么不做本地校验
+
+更"聪明"的做法是：发请求前先拉一次分类表，发现 slug 不合法就报错并列出可选项。
+
+不做，理由是它需要二选一：
+
+- 每次 list/search 多一次网络请求（哪怕用户没传 `--category` 也要判断）
+- 或者把分类表缓存起来 —— 那就多了一份可能过期的本地状态
+
+**这正是 9.8 刚砍掉的那种"第二条线路"。** 一条提示的价值，抵不上多一次请求或一份缓存需要维护。现在的做法是：命令能查到正确答案，文档写清规则，填错就是空结果（和"真没数据"一致，语义上不算错）。
+
+#### 实测
+
+```
+$ skillctl skill categories
+共 5 个分类（--category 填 SLUG 这一列）
+
+┌──────────────┬────────────┬────┐
+│ SLUG         │ NAME       │ ID │
+├──────────────┼────────────┼────┤
+│ web-dev      │ Web开发    │  1 │
+│ data-ai      │ 数据与AI   │  2 │
+│ automation   │ 自动化工具 │  3 │
+│ productivity │ 效率工具   │  4 │
+│ devops       │ 运维与部署 │  5 │
+└──────────────┴────────────┴────┘
+
+$ skillctl skill categories --json
+{"ok": true, "data": {"count": 5, "items": [{"id":1,"name":"Web开发","slug":"web-dev"}, ...]}}
+
+$ skillctl skill list --category web-dev --json
+total=3  ['big-demo-skill', 'root-demo-skill', 'frontend-e2e-test']
+```
+
+表格里中文列宽对齐正常（go-pretty 按显示宽度算），`--json` 走的是同一套信封。
+
 ---
 
 ## 10. 术语表

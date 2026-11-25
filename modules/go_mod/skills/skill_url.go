@@ -29,3 +29,9 @@ func FindVersionsURL(publicID string) string {
 	q.Set("public_id", publicID)
 	return constantquantity.ServerURL() + "/api/v1/skills/find_versions?" + q.Encode()
 }
+
+// AllCategoriesURL 组装 /api/v1/skills/All_categories。
+// 返回的是裸数组 [{id,name,slug}]，没有信封；slug 就是 --category 要填的值。
+func AllCategoriesURL() string {
+	return constantquantity.ServerURL() + "/api/v1/skills/All_categories"
+}

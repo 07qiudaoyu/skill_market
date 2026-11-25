@@ -77,7 +77,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flagJSON, "json", false, "输出 JSON（给脚本 / agent 消费）")
 
 	authCmd.AddCommand(oneself.RegisterCmd, oneself.LoginCmd, oneself.LogoutCmd)
-	skillCmd.AddCommand(skills.ListCmd, skills.SearchCmd, skills.InstallCmd, skills.UninstallCmd, skills.UpgradeCmd)
+	skillCmd.AddCommand(skills.ListCmd, skills.SearchCmd, skills.CategoriesCmd,
+		skills.InstallCmd, skills.UninstallCmd, skills.UpgradeCmd)
 
 	rootCmd.AddCommand(authCmd, skillCmd, oneself.VersionCmd)
 }

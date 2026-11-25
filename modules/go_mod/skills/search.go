@@ -34,7 +34,7 @@ var SearchCmd = &cobra.Command{
 }
 
 func init() {
-	SearchCmd.Flags().String("category", "", "按分类过滤")
+	SearchCmd.Flags().String("category", "", "按分类过滤，填分类 slug（用 skillctl skill categories 查看）")
 	SearchCmd.Flags().String("sort", "newest", "排序方式:newest/downloads/rating")
 	SearchCmd.Flags().Int("page", 1, "页码")
 	SearchCmd.Flags().Int("limit", 10, "每页数量")

@@ -45,7 +45,7 @@ class Ex_upload_file:
    def Ex_invalid_skill():
        raise HTTPException(
                          status_code=400,
-                       detail="上传zip文件，SKILL.md文件有符合数据与上传一致"
+                       detail="上传zip文件，SKILL.md的name/description必须与skill.json完全一致"
                      )
    def Ex_really_skill():
        raise HTTPException(

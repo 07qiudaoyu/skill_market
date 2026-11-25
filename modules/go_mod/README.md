@@ -65,8 +65,9 @@ skillctl auth login    --email <邮箱> [--password <密码>]
 skillctl auth logout
 skillctl version
 
-skillctl skill list      [--installed] [--category <名字>] [--sort newest|downloads|rating] [--page N] [--limit N]
-skillctl skill search    <关键词> [--category <名字>] [--limit N]
+skillctl skill list      [--installed] [--category <slug>] [--sort newest|downloads|rating] [--page N] [--limit N]
+skillctl skill search    <关键词> [--category <slug>] [--limit N]
+skillctl skill categories
 skillctl skill install   <slug> [--target <agent>] [--version <版本>]
 skillctl skill uninstall <slug> [--target <agent>] [--all] [--force]
 skillctl skill upgrade   <slug> [--version <版本>]
@@ -101,6 +102,8 @@ skillctl skill upgrade   <slug> [--version <版本>]
 - `--sort` 只有三个值：`newest` / `downloads` / `rating`。写错会报错（以前是静默按时间排）。
 - `search` 的关键词只匹配**技能名字**（display_name）和**简介**（summary），**不匹配 slug**。
   slug 是标识符不是描述，所以搜 `demo` 找不到 `big-demo-skill`，搜"大仓库"才能找到。
+- `--category` 填的是分类的 **slug**（`web-dev`），不是列表里显示的中文名（Web开发）。
+  用 `skillctl skill categories` 查全部 slug —— 填错不会报错，只会得到空列表。
 - 列表里的 `DOWNLOADS` 是**去重后的 (用户, 版本) 组合数**，不是总下载次数。
   同一个人反复装同一版本，这个数字不会涨。
 

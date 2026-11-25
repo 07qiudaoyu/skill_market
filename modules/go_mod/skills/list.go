@@ -106,7 +106,7 @@ var ListCmd = &cobra.Command{
 
 func init() {
 	ListCmd.Flags().Bool("installed", false, "只列本机已安装的技能(读 ~/.skillctl/registry.json)")
-	ListCmd.Flags().String("category", "", "按分类过滤")
+	ListCmd.Flags().String("category", "", "按分类过滤，填分类 slug（用 skillctl skill categories 查看）")
 	ListCmd.Flags().String("sort", "newest", "排序方式:newest/downloads/rating")
 	ListCmd.Flags().Int("page", 1, "页码")
 	ListCmd.Flags().Int("limit", 10, "每页数量")
