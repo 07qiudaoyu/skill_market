@@ -206,8 +206,7 @@ go run main.go dl <version_id>
 
 token 存在系统 keyring 里，登录一次就行。
 
-## 11.11进行了优化cli，采用cobra包，后期将对输出格式进行优化及keyring缓存优化，目前keyring不具备删除缓存能力
-
-## 11.15优化cli，对下载目录flags完善，明天完善出下载且带标签用于zip基本对比
-
-
+## 代办：
+1.所有上传skill全部改为代审 【】
+2.开发skill审核接口 【】
+3.前端管理员审核界面 【】
