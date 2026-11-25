@@ -206,7 +206,6 @@ go run main.go dl <version_id>
 
 token 存在系统 keyring 里，登录一次就行。
 
-## 代办：
-1.所有上传skill全部改为代审 【】
-2.开发skill审核接口 【】
-3.前端管理员审核界面 【】
+## 代办--人功审核业务确定：
+skills 一行 = 一个版本，is_current 标出线上那一行，审核只是翻转指针；skill_versions 只存文件，不参与内容。
+
