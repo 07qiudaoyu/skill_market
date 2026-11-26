@@ -1,0 +1,12 @@
+{
+  "name": "frontend-e2e-test",
+  "displayName": "前端联调测试",
+  "description": "前端联调测试技能",
+  "version": "1.0.0",
+  "license": "MIT",
+  "category": "web-dev",
+  "tags": ["email", "api"],
+  "agents": ["python"],
+  "dependencies": [],
+  "minCliVersion": "0.1.0"
+}

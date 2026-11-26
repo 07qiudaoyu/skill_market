@@ -167,7 +167,7 @@ class SkillsService:
          if payload is None:
             raise HTTPException(
             status_code=401,
-           detail="token错误!游客现不支持下载skill,请登入"
+           detail="token错误!游客现不支持上传skill,请登入"
                    )
          
          #白名单https://github.com/{owner}/{repo}
@@ -260,3 +260,36 @@ class SkillsService:
                     detail="未找到对应slug信息"
                )
           return result1
+    #=========================返回拿到zip文件，进行解压发送文件夹到审核区域==============================
+    def Se_move_zip(self
+        # if payload is None:
+        ):
+                    # raise HTTPException(
+                   #  status_code=401,
+                   # detail="token错误!游客现不支持下载skill,请登入"
+                            #)
+        # developer=payload["developer"]
+        # if developer!=1:
+             # raise HTTPException(
+            #        status_code=401,
+             #       detail="权限不足，非管理员不可拉取待审文件"
+         #                                 )
+         result1=self.repository.Re_move_zip()
+         count=0
+         if result1 is None:
+              return count
+         for item in result1:
+              storage_key = item["storage_key"]
+              skill_id =str (item["skill_id"])
+              id = str(item["id"])
+              file_path= Path("data") /storage_key
+              file_name= skill_id +"AK" +id#管理员不用知道原这个地址
+              target_dir = os.path.join("look", file_name)
+              os.makedirs(target_dir, exist_ok=True)
+              with zipfile.ZipFile(file_path, "r") as z:
+                 z.extractall(target_dir)
+              count=count+1
+         return count
+         
+
+              

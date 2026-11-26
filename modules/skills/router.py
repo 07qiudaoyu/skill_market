@@ -134,4 +134,17 @@ def Re_Cli_downloadzip(
             skill_versions_id=skill_versions_id,
             payload=payload
         )
-
+@router.get(
+    "/Move_zip",
+    status_code=status.HTTP_200_OK
+)
+def Re_move_zip(
+    #payload:dict=Depends(header_token),
+    service:SkillsService=Depends(get_skill_service) 
+):
+    count=service.Se_move_zip(
+       # payload=payload
+        )
+    return {"移动的zip文件数为":count}
+            
+    

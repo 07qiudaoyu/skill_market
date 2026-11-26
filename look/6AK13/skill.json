@@ -1,0 +1,12 @@
+{
+  "name": "how-use-to-skillctl",
+  "displayName": "怎么去使用skillctl技能",
+  "description": "用于指示用户Agent怎么快速使用skillctl",
+  "version": "1.0.1",
+  "license": "MIT",
+  "category": "automation",
+  "tags": ["automation", "ai"],
+  "agents": ["claude-code", "cursor", "dsh","qoder"],
+  "dependencies": [],
+  "minCliVersion": "1.0.1"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "big-demo-skill",
+  "displayName": "大仓库测试技能",
+  "description": "一个文件较多、带多层目录的测试仓库，用来验证整包下载与入库。",
+  "version": "1.0.0",
+  "license": "MIT",
+  "category": "web-dev",
+  "tags": ["python", "api"],
+  "agents": ["python"],
+  "dependencies": ["requests"],
+  "minCliVersion": "0.1.0"
+}

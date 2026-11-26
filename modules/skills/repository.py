@@ -38,9 +38,8 @@ class SkillsRepository:
         """)#ak时先确保slug找到，而后的having是确保数量，也就是都找到
                     params.extend(tags)
                     params.append(len(tags))
-        where_sql=""
-        if condition:
-                        where_sql=" where " + " and ".join(condition)
+        condition.append("s.status=1")
+        where_sql=" where " + " and ".join(condition)
         sort_map={
                         "newest":"s.created_at desc",
                         "downloads":"s.download_count desc",
@@ -63,7 +62,9 @@ class SkillsRepository:
         LEFT JOIN categories c ON s.category_id = c.id
         LEFT JOIN skill_tags st ON s.id = st.skill_id
         LEFT JOIN tags t ON st.tag_id = t.id
+        
         {where_sql}
+        
         GROUP BY s.id
         order by {order_by}
         LIMIT %s offset %s
@@ -78,6 +79,7 @@ SELECT
         LEFT JOIN categories c ON s.category_id = c.id
         LEFT JOIN skill_tags st ON s.id = st.skill_id
         LEFT JOIN tags t ON st.tag_id = t.id
+        
         {where_sql}
        
 
@@ -115,6 +117,7 @@ left join join_and_enter jne on jne.id=skills.owner_id
 inner join skill_versions sv on sv.skill_id=skills.id
 where skills.public_id=%s
 and sv.status=1
+and skills.status=1
 order by sv.created_at desc
 """
                 cursor.execute(sql,(public_id,))
@@ -127,7 +130,7 @@ order by sv.created_at desc
            cursor=self.conn.cursor()
            try:
                   sql="""
-select storage_key from skill_versions where id=%s
+select storage_key from skill_versions where id=%s and status =1
 """                
                   cursor.execute(sql,(skill_versions_id))
                   result=cursor.fetchone()
@@ -149,7 +152,7 @@ select storage_key from skill_versions where id=%s
                 
                  if ak:
                        sql1="""
-select skill_id from skill_versions where id=%s
+select skill_id from skill_versions where id=%s and status=1
 
 """#当返回1时，也就是第一次下载，0为非第一
                        cursor.execute(sql1,(skill_versions_id,))
@@ -346,6 +349,17 @@ select id from skill_versions where skill_id in(select id from skills where slug
                 
           finally:
                       cursor.close()
-                
-                
+  #======================拿到待审核的key================================
+  #返回待审核的storage_key,skill_id,id
+    def Re_move_zip(self):
+          cursor=self.conn.cursor()
+          try:
+                sql="""
+select storage_key,version, skill_id,id from skill_versions where status=1
+"""             
+                cursor.execute(sql)
+                result=cursor.fetchall()
+                return result
+          finally:
+                cursor.close()      
           
